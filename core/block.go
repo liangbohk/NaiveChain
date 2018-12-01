@@ -47,3 +47,8 @@ func NewBlock(data string, height int64, prevHash []byte) *Block {
 
 	return block
 }
+
+//generate the genesis block
+func CreateGenesisBlock(data string) *Block {
+	return NewBlock(data, 0, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+}

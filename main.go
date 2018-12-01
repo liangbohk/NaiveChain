@@ -6,13 +6,8 @@ import (
 )
 
 func main() {
-	block := core.NewBlock("Genesis Block", 0, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
-	fmt.Println(block)
-	fmt.Println(string(block.Hash))
+	blc := core.CreateBlockchainWithAGenesisBlock()
+	blc.AddBlockToBlockchain("Second block", blc.Blocks[len(blc.Blocks)-1].Height+1, blc.Blocks[len(blc.Blocks)-1].Hash)
+	fmt.Println(*blc.Blocks[1])
 
-	//fmt.Println(strconv.FormatInt(54,2))
-	//fmt.Println([]byte(strconv.FormatInt(54,2)))
-	//fmt.Println(core.Int2ByteArray(54))
-	//fmt.Println(core.Int2ByteArray(1))
-	//fmt.Println('1')
 }
