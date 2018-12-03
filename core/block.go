@@ -2,8 +2,8 @@ package core
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"strconv"
+	"encoding/gob"
+	"log"
 	"time"
 )
 
@@ -18,32 +18,19 @@ type Block struct {
 	Data []byte
 	//time stamp
 	Timestamp int64
-}
-
-func (block *Block) SetHash() {
-	//joint the componets in block struct, transcode the component to []byte form if it is not
-	//timestamp
-	timeStampBytes := []byte(strconv.FormatInt(block.Timestamp, 2))
-
-	//height
-	heightBytes := Int2ByteArray(block.Height)
-
-	//join the componets
-	blockBytes := bytes.Join([][]byte{heightBytes, block.PrevHash, block.Hash, block.Data, timeStampBytes}, []byte{})
-
-	//compute hash
-	hash := sha256.Sum256(blockBytes)
-
-	block.Hash = hash[:]
-
+	//nouce attribute
+	Nonce int64
 }
 
 //create new block
 func NewBlock(data string, height int64, prevHash []byte) *Block {
-	block := &Block{height, prevHash, nil, []byte(data), time.Now().Unix()}
+	block := &Block{height, prevHash, nil, []byte(data), time.Now().Unix(), 0}
 
-	//set block hash
-	block.SetHash()
+	//POW
+	pow := NewProofOfWork(block)
+	//assume zero digits number is 6
+	hash, nonce := pow.Run()
+	block.Hash, block.Nonce = hash, nonce
 
 	return block
 }
@@ -51,4 +38,30 @@ func NewBlock(data string, height int64, prevHash []byte) *Block {
 //generate the genesis block
 func CreateGenesisBlock(data string) *Block {
 	return NewBlock(data, 0, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+}
+
+//serialize the block
+func (block *Block) Serialize() []byte {
+	var res bytes.Buffer
+	//initialize an encoder
+	encoder := gob.NewEncoder(&res)
+	err := encoder.Encode(block)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return res.Bytes()
+}
+
+//deserialize the block bytes
+func Deserialize(blockbytes []byte) *Block {
+	var block Block
+
+	decoder := gob.NewDecoder(bytes.NewReader(blockbytes))
+	err := decoder.Decode(&block)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return &block
 }
