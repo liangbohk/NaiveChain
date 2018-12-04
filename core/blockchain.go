@@ -1,8 +1,11 @@
 package core
 
 import (
+	"fmt"
 	"github.com/boltdb/bolt"
 	"log"
+	"math/big"
+	"time"
 )
 
 //database name
@@ -88,4 +91,41 @@ func (blc *Blockchain) AddBlockToBlockchain(data string) {
 		log.Panic(err)
 	}
 
+}
+
+//print the info of a blockchain by iterating visit
+func (blc *Blockchain) PrintChain() {
+	//fmt.Println("Start to open")
+	//db, err := bolt.Open(dbName, 0600, nil)
+	//fmt.Println("Open")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+
+	err := blc.DB.View(func(tx *bolt.Tx) error {
+		fmt.Println("View")
+		bucket := tx.Bucket([]byte(tableName))
+		if bucket != nil {
+			var curHash = blc.Tail
+			for {
+				//in this loop, get current block
+				block := Deserialize(bucket.Get(curHash))
+				fmt.Printf("Height: %d, PredHash:%x, Data:%s, TimeStamp:%s, Hash:%x, Nonce:%d\n",
+					block.Height, block.PrevHash, block.Data, time.Unix(block.Timestamp, 0).Format("2006-01-02 03:04:05 PM"), block.Hash, block.Nonce)
+
+				var hashInt big.Int
+				hashInt.SetBytes(block.PrevHash)
+				if hashInt.Cmp(big.NewInt(0)) == 0 {
+					break
+				}
+				curHash = block.PrevHash
+			}
+		}
+
+		return nil
+
+	})
+	if err != nil {
+		log.Panic(err)
+	}
 }

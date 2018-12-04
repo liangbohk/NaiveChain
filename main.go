@@ -11,7 +11,7 @@ func main() {
 	blc.AddBlockToBlockchain("second")
 	blc.AddBlockToBlockchain("third")
 	blc.AddBlockToBlockchain("forth")
-
+	blc.PrintChain()
 	err := blc.DB.Close()
 	if err != nil {
 		log.Panic(err)
