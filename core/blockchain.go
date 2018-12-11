@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/boltdb/bolt"
 	"log"
+	"os"
 	"time"
 )
 
@@ -19,28 +20,39 @@ type Blockchain struct {
 	DB   *bolt.DB
 }
 
+//check if the db exist
+func DBExist() bool {
+	if _, err := os.Stat(dbName); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
 //generate a blockchain with a genesis block
-func CreateBlockchainWithAGenesisBlock() *Blockchain {
+func CreateBlockchainWithAGenesisBlock(data string) {
+	//check if the db exist
+	if DBExist() {
+		fmt.Println("genesis block already exists!")
+		os.Exit(1)
+	}
+
+	fmt.Println("creating the genesis block")
 	//initialize the database
 	db, err := bolt.Open(dbName, 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var tailHash []byte
 	err = db.Update(func(tx *bolt.Tx) error {
-		//get the bucket
-		bucket := tx.Bucket([]byte(tableName))
-		if bucket == nil {
-			bucket, err = tx.CreateBucket([]byte(tableName))
-			if err != nil {
-				log.Panic(err)
-			}
+
+		bucket, err := tx.CreateBucket([]byte(tableName))
+		if err != nil {
+			log.Panic(err)
 		}
 
 		if bucket != nil {
 			//generate a genesis block
-			genesisBlock := CreateGenesisBlock("Genesis block")
+			genesisBlock := CreateGenesisBlock(data)
 			//save genesisBlock to the table
 			err = bucket.Put(genesisBlock.Hash, genesisBlock.Serialize())
 			if err != nil {
@@ -52,12 +64,9 @@ func CreateBlockchainWithAGenesisBlock() *Blockchain {
 			if err != nil {
 				log.Panic(err)
 			}
-			tailHash = genesisBlock.Hash
 		}
 		return nil
 	})
-
-	return &Blockchain{tailHash, db}
 }
 
 //add a block to the blockchain
@@ -110,4 +119,29 @@ func (blc *Blockchain) PrintChain() {
 			block.Height, block.PrevHash, block.Data, time.Unix(block.Timestamp, 0).Format("2006-01-02 03:04:05 PM"), block.Hash, block.Nonce)
 	}
 
+}
+
+//get a blockchain object
+func BlockchainObject() *Blockchain {
+	//open the database
+	db, err := bolt.Open(dbName, 0600, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var tailHash []byte
+	err = db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(tableName))
+
+		if b != nil {
+			tailHash = b.Get([]byte("tail"))
+
+		} else {
+			log.Fatal("no blockchain")
+		}
+		return nil
+
+	})
+
+	return &Blockchain{tailHash, db}
 }

@@ -1,20 +1,14 @@
 package main
 
 import (
-	"NaiveChain/core"
-	"log"
+	"NaiveChain/cmd"
 )
 
 func main() {
-	blc := core.CreateBlockchainWithAGenesisBlock()
-	blc.AddBlockToBlockchain("first")
-	blc.AddBlockToBlockchain("second")
-	blc.AddBlockToBlockchain("third")
-	blc.AddBlockToBlockchain("forth")
-	blc.PrintChain()
-	err := blc.DB.Close()
-	if err != nil {
-		log.Panic(err)
-	}
+
+	//blc := core.CreateBlockchainWithAGenesisBlock("genesis block")
+
+	cli := cmd.CLI{}
+	cli.Run()
 
 }
