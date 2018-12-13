@@ -28,10 +28,9 @@ func (pow *ProofOfWork) prepareData(nonce int64) []byte {
 	data := bytes.Join(
 		[][]byte{
 			pow.block.PrevHash,
-			pow.block.Data,
+			pow.block.Transactions2Hash(), //convert transactions array to Hash([]byte)
 			Int2ByteArray(pow.block.Height),
 			Int2ByteArray(pow.block.Timestamp),
-			Int2ByteArray(int64(targetZeroBit)),
 			Int2ByteArray(int64(nonce)),
 		},
 		[]byte{},

@@ -2,11 +2,13 @@ package core
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/gob"
 	"log"
 	"time"
 )
 
+//the block structure
 type Block struct {
 	//block height
 	Height int64
@@ -15,16 +17,27 @@ type Block struct {
 	//hash
 	Hash []byte
 	//transactions
-	Data []byte
+	Txs []*Transaction
 	//time stamp
 	Timestamp int64
 	//nouce attribute
 	Nonce int64
 }
 
+func (block *Block) Transactions2Hash() []byte {
+	var txHashArr [][]byte
+
+	for _, tx := range block.Txs {
+		txHashArr = append(txHashArr, tx.TxHash)
+	}
+	txsHash := sha256.Sum256(bytes.Join(txHashArr, []byte{}))
+
+	return txsHash[:]
+}
+
 //create new block
-func NewBlock(data string, height int64, prevHash []byte) *Block {
-	block := &Block{height, prevHash, nil, []byte(data), time.Now().Unix(), 0}
+func NewBlock(txs []*Transaction, height int64, prevHash []byte) *Block {
+	block := &Block{height, prevHash, nil, txs, time.Now().Unix(), 0}
 
 	//POW
 	pow := NewProofOfWork(block)
@@ -36,8 +49,8 @@ func NewBlock(data string, height int64, prevHash []byte) *Block {
 }
 
 //generate the genesis block
-func CreateGenesisBlock(data string) *Block {
-	return NewBlock(data, 0, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+func CreateGenesisBlock(txs []*Transaction) *Block {
+	return NewBlock(txs, 0, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 }
 
 //serialize the block

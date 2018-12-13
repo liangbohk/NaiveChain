@@ -30,13 +30,13 @@ func isValidArg() {
 }
 
 //add a block to the blockchain
-func (cli *CLI) addBlock(data string) {
+func (cli *CLI) addBlock(txs []*core.Transaction) {
 	if !core.DBExist() {
 		log.Fatal("no blockchain")
 	}
 	blc := core.BlockchainObject()
 	defer blc.DB.Close()
-	blc.AddBlockToBlockchain(data)
+	blc.AddBlockToBlockchain([]*core.Transaction{})
 }
 
 //print the blockchain
@@ -50,9 +50,8 @@ func (cli *CLI) printChain() {
 }
 
 //create blockchain with genesis block
-func (cli *CLI) createGenesisBlockChain(data string) {
-	fmt.Printf("Genesis data: %s\n", data)
-	core.CreateBlockchainWithAGenesisBlock(data)
+func (cli *CLI) createGenesisBlockChain(txs []*core.Transaction) {
+	core.CreateBlockchainWithAGenesisBlock(txs)
 }
 
 func (cli *CLI) Run() {
@@ -92,7 +91,7 @@ func (cli *CLI) Run() {
 			printUsage()
 			os.Exit(11)
 		}
-		cli.createGenesisBlockChain(*flagCreateBlockchainData)
+		cli.createGenesisBlockChain([]*core.Transaction{})
 
 	}
 
@@ -102,7 +101,7 @@ func (cli *CLI) Run() {
 			os.Exit(1)
 		}
 		//fmt.Println(*flagAddBlockData)
-		cli.addBlock(*flagAddBlockData)
+		cli.addBlock([]*core.Transaction{})
 	}
 
 	if printBlockchainCmd.Parsed() {

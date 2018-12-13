@@ -29,7 +29,7 @@ func DBExist() bool {
 }
 
 //generate a blockchain with a genesis block
-func CreateBlockchainWithAGenesisBlock(data string) {
+func CreateBlockchainWithAGenesisBlock(txs []*Transaction) {
 	//check if the db exist
 	if DBExist() {
 		fmt.Println("genesis block already exists!")
@@ -52,7 +52,7 @@ func CreateBlockchainWithAGenesisBlock(data string) {
 
 		if bucket != nil {
 			//generate a genesis block
-			genesisBlock := CreateGenesisBlock(data)
+			genesisBlock := CreateGenesisBlock(txs)
 			//save genesisBlock to the table
 			err = bucket.Put(genesisBlock.Hash, genesisBlock.Serialize())
 			if err != nil {
@@ -70,7 +70,7 @@ func CreateBlockchainWithAGenesisBlock(data string) {
 }
 
 //add a block to the blockchain
-func (blc *Blockchain) AddBlockToBlockchain(data string) {
+func (blc *Blockchain) AddBlockToBlockchain(txs []*Transaction) {
 	//save the block to the database
 	err := blc.DB.Update(func(tx *bolt.Tx) error {
 
@@ -79,7 +79,7 @@ func (blc *Blockchain) AddBlockToBlockchain(data string) {
 		//get the newest block
 		lastBlock := Deserialize(table.Get(blc.Tail))
 		//create a new block
-		block := NewBlock(data, lastBlock.Height+1, lastBlock.Hash)
+		block := NewBlock(txs, lastBlock.Height+1, lastBlock.Hash)
 		//save the block to the database
 		err := table.Put(block.Hash, block.Serialize())
 		if err != nil {
@@ -116,7 +116,7 @@ func (blc *Blockchain) PrintChain() {
 			return
 		}
 		fmt.Printf("Height: %d, PredHash:%x, Data:%s, TimeStamp:%s, Hash:%x, Nonce:%d\n",
-			block.Height, block.PrevHash, block.Data, time.Unix(block.Timestamp, 0).Format("2006-01-02 03:04:05 PM"), block.Hash, block.Nonce)
+			block.Height, block.PrevHash, block.Txs, time.Unix(block.Timestamp, 0).Format("2006-01-02 03:04:05 PM"), block.Hash, block.Nonce)
 	}
 
 }
