@@ -29,7 +29,7 @@ func DBExist() bool {
 }
 
 //generate a blockchain with a genesis block
-func CreateBlockchainWithAGenesisBlock(txs []*Transaction) {
+func CreateBlockchainWithAGenesisBlock(address string) *Blockchain {
 	//check if the db exist
 	if DBExist() {
 		fmt.Println("genesis block already exists!")
@@ -42,7 +42,7 @@ func CreateBlockchainWithAGenesisBlock(txs []*Transaction) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	var genesisHash []byte
 	err = db.Update(func(tx *bolt.Tx) error {
 
 		bucket, err := tx.CreateBucket([]byte(tableName))
@@ -51,8 +51,11 @@ func CreateBlockchainWithAGenesisBlock(txs []*Transaction) {
 		}
 
 		if bucket != nil {
+			//create transaction
+			txCoinbase := NewCoinbaseTransaction(address)
+
 			//generate a genesis block
-			genesisBlock := CreateGenesisBlock(txs)
+			genesisBlock := CreateGenesisBlock([]*Transaction{txCoinbase})
 			//save genesisBlock to the table
 			err = bucket.Put(genesisBlock.Hash, genesisBlock.Serialize())
 			if err != nil {
@@ -64,9 +67,12 @@ func CreateBlockchainWithAGenesisBlock(txs []*Transaction) {
 			if err != nil {
 				log.Panic(err)
 			}
+			genesisHash = genesisBlock.Hash
 		}
 		return nil
 	})
+
+	return &Blockchain{genesisHash, db}
 }
 
 //add a block to the blockchain
@@ -115,8 +121,28 @@ func (blc *Blockchain) PrintChain() {
 		if block == nil {
 			return
 		}
-		fmt.Printf("Height: %d, PredHash:%x, Data:%s, TimeStamp:%s, Hash:%x, Nonce:%d\n",
-			block.Height, block.PrevHash, block.Txs, time.Unix(block.Timestamp, 0).Format("2006-01-02 03:04:05 PM"), block.Hash, block.Nonce)
+		fmt.Println("-----------------------------------------------------------")
+		fmt.Printf("Height: %d\n PredHash:%x\n TimeStamp:%s\n Hash:%x\n Nonce:%d\n",
+			block.Height, block.PrevHash, time.Unix(block.Timestamp, 0).Format("2006-01-02 03:04:05 PM"), block.Hash, block.Nonce)
+		fmt.Println("Transactions:")
+		for _, tx := range block.Txs {
+			fmt.Printf("%x\n", tx.TxHash)
+			for _, input := range tx.TxIns {
+				fmt.Println("TXInput:")
+				fmt.Printf("%s\n", input.TxHash)
+				fmt.Printf("%d\n", input.TxOutIndex)
+				fmt.Printf("%s\n", input.ScriptSig)
+			}
+
+			for _, output := range tx.TxOuts {
+				fmt.Println("TXOutput:")
+				fmt.Println(output.Value)
+				fmt.Println(output.ScriptPubkey)
+				fmt.Println("\n")
+
+			}
+		}
+
 	}
 
 }
@@ -144,4 +170,42 @@ func BlockchainObject() *Blockchain {
 	})
 
 	return &Blockchain{tailHash, db}
+}
+
+func (blc *Blockchain) MineNewBlock(from []string, to []string, amount []string) *Blockchain {
+	fmt.Println(from)
+	fmt.Println(to)
+	fmt.Println(amount)
+
+	//set up the transactions
+	var txs []*Transaction
+
+	blc.AddBlockToBlockchain(txs)
+
+	////get newest block info
+	//var block *Block
+	//blc.DB.View(func(tx *bolt.Tx) error {
+	//	b:=tx.Bucket([]byte(tableName))
+	//	if b!=nil{
+	//		hash:=b.Get([]byte("tail"))
+	//		block=Deserialize(b.Get(hash))
+	//	}
+	//	return nil
+	//})
+	//
+	////build a new block
+	//newBlock:=NewBlock(txs,block.Height+1,block.Hash)
+	//
+	////save new block to db
+	//blc.DB.Update(func(tx *bolt.Tx) error {
+	//	b:=tx.Bucket([]byte(tableName))
+	//	if b!=nil{
+	//		b.Put(newBlock.Hash,newBlock.Serialize())
+	//		b.Put([]byte("tail"),newBlock.Hash)
+	//		blc.Tail=newBlock.Hash
+	//	}
+	//	return nil
+	//})
+	return blc
+
 }

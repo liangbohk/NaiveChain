@@ -16,8 +16,8 @@ type CLI struct {
 //print command usage
 func printUsage() {
 	fmt.Println("Usage:")
-	fmt.Println("\tcreateblockchain -data DATA -- transaction data")
-	fmt.Println("\taddblock -data DATA -- transaction data")
+	fmt.Println("\tcreateblockchain -address ADDRESS -- address")
+	fmt.Println("\tsend -from FROM -to TO -amount AMOUNT -- transaction")
 	fmt.Println("\tprintchain -- print the block chain")
 }
 
@@ -30,14 +30,14 @@ func isValidArg() {
 }
 
 //add a block to the blockchain
-func (cli *CLI) addBlock(txs []*core.Transaction) {
-	if !core.DBExist() {
-		log.Fatal("no blockchain")
-	}
-	blc := core.BlockchainObject()
-	defer blc.DB.Close()
-	blc.AddBlockToBlockchain([]*core.Transaction{})
-}
+//func (cli *CLI) addBlock(txs []*core.Transaction) {
+//	if !core.DBExist() {
+//		log.Fatal("no blockchain")
+//	}
+//	blc := core.BlockchainObject()
+//	defer blc.DB.Close()
+//	blc.AddBlockToBlockchain([]*core.Transaction{})
+//}
 
 //print the blockchain
 func (cli *CLI) printChain() {
@@ -50,23 +50,39 @@ func (cli *CLI) printChain() {
 }
 
 //create blockchain with genesis block
-func (cli *CLI) createGenesisBlockChain(txs []*core.Transaction) {
-	core.CreateBlockchainWithAGenesisBlock(txs)
+func (cli *CLI) createGenesisBlockChain(address string) {
+
+	//create genesis block
+	blc := core.CreateBlockchainWithAGenesisBlock(address)
+	defer blc.DB.Close()
+}
+
+func (cli *CLI) send(from []string, to []string, amount []string) {
+	if !core.DBExist() {
+		log.Fatal("no blockchain")
+	}
+	blc := core.BlockchainObject()
+	defer blc.DB.Close()
+
+	blc.MineNewBlock(from, to, amount)
 }
 
 func (cli *CLI) Run() {
 	isValidArg()
 
-	addBlockCmd := flag.NewFlagSet("addblock", flag.ExitOnError)
+	sendBlockCmd := flag.NewFlagSet("send", flag.ExitOnError)
 	printBlockchainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
 	createBlockchainWithGeneisCmd := flag.NewFlagSet("createblockchain", flag.ExitOnError)
 
-	flagAddBlockData := addBlockCmd.String("data", "added block data", "transaction data")
-	flagCreateBlockchainData := createBlockchainWithGeneisCmd.String("data", "Genesis block", "genesis block transaction data")
+	flagSendFrom := sendBlockCmd.String("from", "", "source address")
+	flagSendTo := sendBlockCmd.String("to", "", "dist address")
+	flagSendAmount := sendBlockCmd.String("amount", "", "transfer amount")
+
+	flagCreateBlockchainAddress := createBlockchainWithGeneisCmd.String("address", "", "genesis block address")
 
 	switch os.Args[1] {
-	case "addblock":
-		err := addBlockCmd.Parse(os.Args[2:])
+	case "send":
+		err := sendBlockCmd.Parse(os.Args[2:])
 		if err != nil {
 			log.Panic(err)
 		}
@@ -86,22 +102,30 @@ func (cli *CLI) Run() {
 	}
 
 	if createBlockchainWithGeneisCmd.Parsed() {
-		if *flagCreateBlockchainData == "" {
-			fmt.Println("empty data")
+		if *flagCreateBlockchainAddress == "" {
+			fmt.Println("address cannot be empty ")
 			printUsage()
 			os.Exit(11)
 		}
-		cli.createGenesisBlockChain([]*core.Transaction{})
+		cli.createGenesisBlockChain(*flagCreateBlockchainAddress)
 
 	}
 
-	if addBlockCmd.Parsed() {
-		if *flagAddBlockData == "" {
+	if sendBlockCmd.Parsed() {
+		if *flagSendFrom == "" || *flagSendTo == "" || *flagSendAmount == "" {
 			printUsage()
 			os.Exit(1)
 		}
 		//fmt.Println(*flagAddBlockData)
-		cli.addBlock([]*core.Transaction{})
+		//cli.addBlock([]*core.Transaction{})
+		//fmt.Println(*flagSendFrom)
+		//fmt.Println(*flagSendTo)
+		//fmt.Println(*flagSendAmount)
+		//
+		//fmt.Println(core.Json2Array(*flagSendFrom))
+		//fmt.Println(core.Json2Array(*flagSendTo))
+		//fmt.Println(core.Json2Array(*flagSendAmount))
+		cli.send(core.Json2Array(*flagSendFrom), core.Json2Array(*flagSendTo), core.Json2Array(*flagSendAmount))
 	}
 
 	if printBlockchainCmd.Parsed() {

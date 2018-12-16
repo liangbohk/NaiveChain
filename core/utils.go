@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"log"
 )
 
@@ -15,4 +16,12 @@ func Int2ByteArray(num int64) []byte {
 	}
 
 	return buff.Bytes()
+}
+
+func Json2Array(jsonStr string) []string {
+	var s []string
+	if err := json.Unmarshal([]byte(jsonStr), &s); err != nil {
+		log.Panic(err)
+	}
+	return s
 }
