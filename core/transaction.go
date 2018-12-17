@@ -19,7 +19,7 @@ type Transaction struct {
 //transaction from coinbase
 func NewCoinbaseTransaction(address string) *Transaction {
 	txInput := &TXInput{[]byte{}, -1, "Genesis Data"}
-	txOutput := &TXOutput{10, address}
+	txOutput := &TXOutput{100, address}
 	txCoinbase := &Transaction{[]byte{}, []*TXInput{txInput}, []*TXOutput{txOutput}}
 	txCoinbase.AttachHash()
 	return txCoinbase
@@ -36,4 +36,24 @@ func (tx *Transaction) AttachHash() {
 	}
 	hash := sha256.Sum256(res.Bytes())
 	tx.TxHash = hash[:]
+}
+
+func NewSimpleTransaction(from string, to string, amount int) *Transaction {
+
+	//build a tx input array
+	var txIns []*TXInput
+	txInput := &TXInput{[]byte("A Simple Transaction Hash"), 0, from}
+	txIns = append(txIns, txInput)
+
+	var txOuts []*TXOutput
+	//send
+	txOutput := &TXOutput{int64(amount), to}
+	txOuts = append(txOuts, txOutput)
+	//change
+	txOutput = &TXOutput{100 - int64(amount), to}
+	txOuts = append(txOuts, txOutput)
+
+	tx := &Transaction{[]byte{}, txIns, txOuts}
+	tx.AttachHash()
+	return tx
 }

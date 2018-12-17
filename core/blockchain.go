@@ -5,6 +5,7 @@ import (
 	"github.com/boltdb/bolt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -173,12 +174,21 @@ func BlockchainObject() *Blockchain {
 }
 
 func (blc *Blockchain) MineNewBlock(from []string, to []string, amount []string) *Blockchain {
+
+	//build a new transaction
+	value, err := strconv.Atoi(amount[0])
+	if err != nil {
+		log.Panic(err)
+	}
+	tx := NewSimpleTransaction(from[0], to[0], value)
+
 	fmt.Println(from)
 	fmt.Println(to)
 	fmt.Println(amount)
 
 	//set up the transactions
 	var txs []*Transaction
+	txs = append(txs, tx)
 
 	blc.AddBlockToBlockchain(txs)
 
