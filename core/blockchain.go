@@ -139,8 +139,6 @@ func (blc *Blockchain) PrintChain() {
 				fmt.Println("TXOutput:")
 				fmt.Println(output.Value)
 				fmt.Println(output.ScriptPubkey)
-				fmt.Println("\n")
-
 			}
 		}
 
@@ -173,6 +171,12 @@ func BlockchainObject() *Blockchain {
 	return &Blockchain{tailHash, db}
 }
 
+//返回某个地址未花费的tx,里面包含地址对应的TXOutput
+func UnSpentTransactions(address string) []*Transaction {
+
+	return nil
+}
+
 func (blc *Blockchain) MineNewBlock(from []string, to []string, amount []string) *Blockchain {
 
 	//build a new transaction
@@ -185,6 +189,9 @@ func (blc *Blockchain) MineNewBlock(from []string, to []string, amount []string)
 	fmt.Println(from)
 	fmt.Println(to)
 	fmt.Println(amount)
+
+	//return unspent txoutput in tx form
+	//unSpentTx:=UnSpentTransactions(from)
 
 	//set up the transactions
 	var txs []*Transaction
