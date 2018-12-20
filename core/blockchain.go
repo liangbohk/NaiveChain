@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/boltdb/bolt"
 	"log"
+	"math/big"
 	"os"
 	"strconv"
 	"time"
@@ -171,8 +172,63 @@ func BlockchainObject() *Blockchain {
 	return &Blockchain{tailHash, db}
 }
 
-//返回某个地址未花费的tx,里面包含地址对应的TXOutput
-func UnSpentTransactions(address string) []*Transaction {
+//return transactions with unspent TXOutput
+func (blc *Blockchain) UnSpentTransactions(address string) []*TXOutput {
+
+	//store unspent transactions
+	var UTXOs []*TXOutput
+	//store spent txoutput
+	spentTXOutputs := make(map[string][]int)
+
+	//get iterator
+	iter := blc.Iterator()
+
+	for {
+		block := iter.Next()
+
+		fmt.Println(block)
+
+		//deal with transaction
+		for _, tx := range block.Txs {
+
+			//txinput
+			if tx.IsCoinbaseTransaction() == false {
+				for _, in := range tx.TxIns {
+					if in.UnLockScriptSigWithAddress(address) {
+						spentTXOutputs[string(in.TxHash)] = append(spentTXOutputs[string(in.TxHash)], in.TxOutIndex)
+					}
+				}
+			}
+
+			//txoutput
+			for index, out := range tx.TxOuts {
+				if out.UnLockScriptPubkeyWithAddress(address) {
+					if spentTXOutputs != nil {
+						for txHash, indexArr := range spentTXOutputs {
+							if txHash == string(tx.TxHash) {
+								for _, i := range indexArr {
+									if index == i {
+										continue
+									} else {
+										UTXOs = append(UTXOs, out)
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+		}
+
+		var hashInt big.Int
+		hashInt.SetBytes(block.PrevHash)
+
+		//stop condition
+		if hashInt.Cmp(big.NewInt(0)) == 1 {
+			break
+		}
+	}
 
 	return nil
 }

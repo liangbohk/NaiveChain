@@ -16,6 +16,11 @@ type Transaction struct {
 	TxOuts []*TXOutput
 }
 
+//chech curTx is coinbase or not
+func (tx *Transaction) IsCoinbaseTransaction() bool {
+	return len(tx.TxIns[0].TxHash) == 0 && tx.TxIns[0].TxOutIndex == -1
+}
+
 //transaction from coinbase
 func NewCoinbaseTransaction(address string) *Transaction {
 	txInput := &TXInput{[]byte{}, -1, "Genesis Data"}
@@ -40,6 +45,10 @@ func (tx *Transaction) AttachHash() {
 
 func NewSimpleTransaction(from string, to string, amount int) *Transaction {
 
+	//return unspent txoutput in tx form
+	//unSpentTx:=UnSpentTransactions(from)
+	//fmt.Println(unSpentTx)
+
 	//build a tx input array
 	var txIns []*TXInput
 	txInput := &TXInput{[]byte("A Simple Transaction Hash"), 0, from}
@@ -50,7 +59,7 @@ func NewSimpleTransaction(from string, to string, amount int) *Transaction {
 	txOutput := &TXOutput{int64(amount), to}
 	txOuts = append(txOuts, txOutput)
 	//change
-	txOutput = &TXOutput{100 - int64(amount), to}
+	txOutput = &TXOutput{100 - int64(amount), from}
 	txOuts = append(txOuts, txOutput)
 
 	tx := &Transaction{[]byte{}, txIns, txOuts}

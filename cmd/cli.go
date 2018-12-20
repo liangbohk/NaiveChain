@@ -18,6 +18,7 @@ func printUsage() {
 	fmt.Println("Usage:")
 	fmt.Println("\tcreateblockchain -address ADDRESS -- address")
 	fmt.Println("\tsend -from FROM -to TO -amount AMOUNT -- transaction")
+	fmt.Println("\tgetbalance -address ADDRESS -- get balance of an address")
 	fmt.Println("\tprintchain -- print the block chain")
 }
 
@@ -67,18 +68,33 @@ func (cli *CLI) send(from []string, to []string, amount []string) {
 	blc.MineNewBlock(from, to, amount)
 }
 
+//look up balance
+func (cli *CLI) getBalance(address string) {
+	fmt.Printf("address: %s\n", address)
+
+	blockchain := core.BlockchainObject()
+	defer blockchain.DB.Close()
+	//get txs with unspent output
+	txOuts := blockchain.UnSpentTransactions(address)
+
+	fmt.Println(txOuts)
+}
+
 func (cli *CLI) Run() {
 	isValidArg()
 
 	sendBlockCmd := flag.NewFlagSet("send", flag.ExitOnError)
 	printBlockchainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
 	createBlockchainWithGeneisCmd := flag.NewFlagSet("createblockchain", flag.ExitOnError)
+	getBalanceCmd := flag.NewFlagSet("getbalance", flag.ExitOnError)
 
 	flagSendFrom := sendBlockCmd.String("from", "", "source address")
 	flagSendTo := sendBlockCmd.String("to", "", "dist address")
 	flagSendAmount := sendBlockCmd.String("amount", "", "transfer amount")
 
 	flagCreateBlockchainAddress := createBlockchainWithGeneisCmd.String("address", "", "genesis block address")
+
+	flagGetBalanceWithAddress := getBalanceCmd.String("address", "", "look up the balance of an address")
 
 	switch os.Args[1] {
 	case "send":
@@ -93,6 +109,11 @@ func (cli *CLI) Run() {
 		}
 	case "createblockchain":
 		err := createBlockchainWithGeneisCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
+	case "getbalance":
+		err := getBalanceCmd.Parse(os.Args[2:])
 		if err != nil {
 			log.Panic(err)
 		}
@@ -126,6 +147,14 @@ func (cli *CLI) Run() {
 		//fmt.Println(core.Json2Array(*flagSendTo))
 		//fmt.Println(core.Json2Array(*flagSendAmount))
 		cli.send(core.Json2Array(*flagSendFrom), core.Json2Array(*flagSendTo), core.Json2Array(*flagSendAmount))
+	}
+
+	if getBalanceCmd.Parsed() {
+		if *flagGetBalanceWithAddress == "" {
+			printUsage()
+			os.Exit(1)
+		}
+		cli.getBalance(*flagGetBalanceWithAddress)
 	}
 
 	if printBlockchainCmd.Parsed() {
