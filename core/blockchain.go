@@ -173,10 +173,10 @@ func BlockchainObject() *Blockchain {
 }
 
 //return transactions with unspent TXOutput
-func (blc *Blockchain) UnSpentTransactions(address string) []*TXOutput {
+func (blc *Blockchain) UnSpentTxOuts(address string) []*UTXO {
 
 	//store unspent transactions
-	var UTXOs []*TXOutput
+	var UTXOs []*UTXO
 	//store spent txoutput
 	spentTXOutputs := make(map[string][]int)
 
@@ -204,17 +204,24 @@ func (blc *Blockchain) UnSpentTransactions(address string) []*TXOutput {
 			for index, out := range tx.TxOuts {
 				if out.UnLockScriptPubkeyWithAddress(address) {
 					if spentTXOutputs != nil {
-						for txHash, indexArr := range spentTXOutputs {
-							if txHash == string(tx.TxHash) {
-								for _, i := range indexArr {
-									if index == i {
-										continue
-									} else {
-										UTXOs = append(UTXOs, out)
+						if len(spentTXOutputs) != 0 {
+							for txHash, indexArr := range spentTXOutputs {
+								if txHash == string(tx.TxHash) {
+									for _, i := range indexArr {
+										if index == i {
+											continue
+										} else {
+											utxo := &UTXO{tx.TxHash, index, out}
+											UTXOs = append(UTXOs, utxo)
+										}
 									}
 								}
 							}
+						} else {
+							utxo := &UTXO{tx.TxHash, index, out}
+							UTXOs = append(UTXOs, utxo)
 						}
+
 					}
 				}
 			}
@@ -225,12 +232,22 @@ func (blc *Blockchain) UnSpentTransactions(address string) []*TXOutput {
 		hashInt.SetBytes(block.PrevHash)
 
 		//stop condition
-		if hashInt.Cmp(big.NewInt(0)) == 1 {
+		if hashInt.Cmp(big.NewInt(0)) == 0 {
 			break
 		}
 	}
 
-	return nil
+	return UTXOs
+}
+
+//get balance
+func (blc *Blockchain) GetBanlance(address string) int64 {
+	utxos := blc.UnSpentTxOuts(address)
+	var amount int64 = 0
+	for _, utxo := range utxos {
+		amount += utxo.Output.Value
+	}
+	return amount
 }
 
 func (blc *Blockchain) MineNewBlock(from []string, to []string, amount []string) *Blockchain {

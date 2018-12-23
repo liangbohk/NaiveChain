@@ -7,3 +7,8 @@ type TXOutput struct {
 	//public key
 	ScriptPubkey string
 }
+
+//check if the sig equals address
+func (txOutput *TXOutput) UnLockScriptPubkeyWithAddress(address string) bool {
+	return txOutput.ScriptPubkey == address
+}

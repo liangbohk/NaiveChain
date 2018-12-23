@@ -24,7 +24,7 @@ func (tx *Transaction) IsCoinbaseTransaction() bool {
 //transaction from coinbase
 func NewCoinbaseTransaction(address string) *Transaction {
 	txInput := &TXInput{[]byte{}, -1, "Genesis Data"}
-	txOutput := &TXOutput{100, address}
+	txOutput := &TXOutput{10, address}
 	txCoinbase := &Transaction{[]byte{}, []*TXInput{txInput}, []*TXOutput{txOutput}}
 	txCoinbase.AttachHash()
 	return txCoinbase
@@ -59,7 +59,7 @@ func NewSimpleTransaction(from string, to string, amount int) *Transaction {
 	txOutput := &TXOutput{int64(amount), to}
 	txOuts = append(txOuts, txOutput)
 	//change
-	txOutput = &TXOutput{100 - int64(amount), from}
+	txOutput = &TXOutput{10 - int64(amount), from}
 	txOuts = append(txOuts, txOutput)
 
 	tx := &Transaction{[]byte{}, txIns, txOuts}

@@ -75,9 +75,9 @@ func (cli *CLI) getBalance(address string) {
 	blockchain := core.BlockchainObject()
 	defer blockchain.DB.Close()
 	//get txs with unspent output
-	txOuts := blockchain.UnSpentTransactions(address)
+	balance := blockchain.GetBanlance(address)
 
-	fmt.Println(txOuts)
+	fmt.Printf("balance %d\n", balance)
 }
 
 func (cli *CLI) Run() {

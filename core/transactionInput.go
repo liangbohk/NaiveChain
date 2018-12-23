@@ -10,3 +10,8 @@ type TXInput struct {
 	//public key
 	ScriptSig string
 }
+
+//check if the sig equals address
+func (txInput *TXInput) UnLockScriptSigWithAddress(address string) bool {
+	return txInput.ScriptSig == address
+}
