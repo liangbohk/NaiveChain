@@ -30,56 +30,6 @@ func isValidArg() {
 	}
 }
 
-//add a block to the blockchain
-//func (cli *CLI) addBlock(txs []*core.Transaction) {
-//	if !core.DBExist() {
-//		log.Fatal("no blockchain")
-//	}
-//	blc := core.BlockchainObject()
-//	defer blc.DB.Close()
-//	blc.AddBlockToBlockchain([]*core.Transaction{})
-//}
-
-//print the blockchain
-func (cli *CLI) printChain() {
-	if !core.DBExist() {
-		log.Fatal("no blockchain")
-	}
-	blc := core.BlockchainObject()
-	defer blc.DB.Close()
-	blc.PrintChain()
-}
-
-//create blockchain with genesis block
-func (cli *CLI) createGenesisBlockChain(address string) {
-
-	//create genesis block
-	blc := core.CreateBlockchainWithAGenesisBlock(address)
-	defer blc.DB.Close()
-}
-
-func (cli *CLI) send(from []string, to []string, amount []string) {
-	if !core.DBExist() {
-		log.Fatal("no blockchain")
-	}
-	blc := core.BlockchainObject()
-	defer blc.DB.Close()
-
-	blc.MineNewBlock(from, to, amount)
-}
-
-//look up balance
-func (cli *CLI) getBalance(address string) {
-	fmt.Printf("address: %s\n", address)
-
-	blockchain := core.BlockchainObject()
-	defer blockchain.DB.Close()
-	//get txs with unspent output
-	balance := blockchain.GetBanlance(address)
-
-	fmt.Printf("balance %d\n", balance)
-}
-
 func (cli *CLI) Run() {
 	isValidArg()
 
