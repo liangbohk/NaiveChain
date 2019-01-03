@@ -44,10 +44,10 @@ func (tx *Transaction) AttachHash() {
 	tx.TxHash = hash[:]
 }
 
-func NewSimpleTransaction(from string, to string, amount int, blc *Blockchain) *Transaction {
+func NewSimpleTransaction(from string, to string, amount int, blc *Blockchain, txs []*Transaction) *Transaction {
 
 	//find usable UTXOs
-	restValue, dic := blc.FindSpendableUTXOs(from, amount)
+	restValue, dic := blc.FindSpendableUTXOs(from, amount, txs)
 	fmt.Printf("restValue:%d, dic:%x", restValue, dic)
 
 	//build a tx input array
