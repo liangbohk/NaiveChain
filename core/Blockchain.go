@@ -186,7 +186,6 @@ func (blc *Blockchain) UnSpentTxOuts(address string) []*UTXO {
 
 	for {
 		block := iter.Next()
-		fmt.Println(hex.EncodeToString(block.Txs[0].TxHash))
 
 		//deal with transaction
 		for _, tx := range block.Txs {
@@ -208,7 +207,6 @@ func (blc *Blockchain) UnSpentTxOuts(address string) []*UTXO {
 						if len(spentTXOutputs) != 0 {
 							for txHash, indexArr := range spentTXOutputs {
 								for _, i := range indexArr {
-									fmt.Printf("%x %d<->%d", tx.TxHash, i, index)
 									if txHash == hex.EncodeToString(tx.TxHash) && index == i {
 										continue loop
 									}
