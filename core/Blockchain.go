@@ -326,7 +326,7 @@ func (blc *Blockchain) FindSpendableUTXOs(from string, amount int, txs []*Transa
 func (blc *Blockchain) MineNewBlock(from []string, to []string, amount []string) *Blockchain {
 
 	//build new transactions
-	//set up the transactions
+	//set up the transactions.Note: the tx order in txs is specially setup
 	var txs []*Transaction
 	for index, _ := range from {
 		value, err := strconv.Atoi(amount[index])
@@ -339,30 +339,6 @@ func (blc *Blockchain) MineNewBlock(from []string, to []string, amount []string)
 
 	blc.AddBlockToBlockchain(txs)
 
-	////get newest block info
-	//var block *Block
-	//blc.DB.View(func(tx *bolt.Tx) error {
-	//	b:=tx.Bucket([]byte(tableName))
-	//	if b!=nil{
-	//		hash:=b.Get([]byte("tail"))
-	//		block=Deserialize(b.Get(hash))
-	//	}
-	//	return nil
-	//})
-	//
-	////build a new block
-	//newBlock:=NewBlock(txs,block.Height+1,block.Hash)
-	//
-	////save new block to db
-	//blc.DB.Update(func(tx *bolt.Tx) error {
-	//	b:=tx.Bucket([]byte(tableName))
-	//	if b!=nil{
-	//		b.Put(newBlock.Hash,newBlock.Serialize())
-	//		b.Put([]byte("tail"),newBlock.Hash)
-	//		blc.Tail=newBlock.Hash
-	//	}
-	//	return nil
-	//})
 	return blc
 
 }

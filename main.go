@@ -1,14 +1,21 @@
 package main
 
 import (
-	"NaiveChain/cmd"
+	"NaiveChain/core"
+	"fmt"
 )
 
+func test() {
+	wallet := core.NewWallet()
+	address := wallet.GetAddress()
+	fmt.Printf("%s\n", address)
+	fmt.Println(len(address))
+}
+
 func main() {
+	test()
 
-	//blc := core.CreateBlockchainWithAGenesisBlock("genesis block")
-
-	cli := cmd.CLI{}
-	cli.Run()
+	//cli := cmd.CLI{}
+	//cli.Run()
 
 }
