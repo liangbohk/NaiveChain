@@ -16,8 +16,9 @@ type CLI struct {
 //print command usage
 func printUsage() {
 	fmt.Println("Usage:")
-	fmt.Println("\tcreateblockchain -address ADDRESS -- address")
-	fmt.Println("\tsend -from FROM -to TO -amount AMOUNT -- transaction")
+	fmt.Println("\tcreatewallet -- create a wallet")
+	fmt.Println("\tcreateblockchain -address ADDRESS -- create a blockchain")
+	fmt.Println("\tsend -from FROM -to TO -amount AMOUNT -- send value by transaction")
 	fmt.Println("\tgetbalance -address ADDRESS -- get balance of an address")
 	fmt.Println("\tprintchain -- print the block chain")
 }

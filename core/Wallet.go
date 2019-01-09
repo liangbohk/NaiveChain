@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -40,6 +41,17 @@ func newKeyPair() (ecdsa.PrivateKey, []byte) {
 
 	return *privateKeyPtr, publicKey
 
+}
+
+func (w *Wallet) IsValidAddress(address []byte) bool {
+	versionAndRipemdHashAndChecksum := Base58Decode(address)
+	versionAndRipemdHash := versionAndRipemdHashAndChecksum[:len(versionAndRipemdHashAndChecksum)-addressChecksumLen]
+	checkSumBytes := versionAndRipemdHashAndChecksum[len(versionAndRipemdHashAndChecksum)-addressChecksumLen:]
+	if bytes.Compare(checkSumBytes, CheckSum(versionAndRipemdHash)) == 0 {
+		return true
+	}
+
+	return false
 }
 
 //get an address
