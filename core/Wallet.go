@@ -43,7 +43,7 @@ func newKeyPair() (ecdsa.PrivateKey, []byte) {
 
 }
 
-func (w *Wallet) IsValidAddress(address []byte) bool {
+func IsValidAddress(address []byte) bool {
 	versionAndRipemdHashAndChecksum := Base58Decode(address)
 	versionAndRipemdHash := versionAndRipemdHashAndChecksum[:len(versionAndRipemdHashAndChecksum)-addressChecksumLen]
 	checkSumBytes := versionAndRipemdHashAndChecksum[len(versionAndRipemdHashAndChecksum)-addressChecksumLen:]

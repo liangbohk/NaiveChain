@@ -1,6 +1,7 @@
 package main
 
 import (
+	"NaiveChain/cmd"
 	"NaiveChain/core"
 	"fmt"
 )
@@ -22,9 +23,9 @@ func test() {
 }
 
 func main() {
-	test()
+	//test()
 
-	//cli := cmd.CLI{}
-	//cli.Run()
+	cli := cmd.CLI{}
+	cli.Run()
 
 }

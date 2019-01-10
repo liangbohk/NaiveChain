@@ -1,5 +1,12 @@
 package cmd
 
-func (cli *CLI) createWallet() {
+import (
+	"NaiveChain/core"
+	"fmt"
+)
 
+func (cli *CLI) createWallet() {
+	wallets := core.NewWallets()
+	wallets.CreateNewWallet()
+	fmt.Println(wallets.Wallets)
 }

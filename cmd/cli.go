@@ -33,7 +33,7 @@ func isValidArg() {
 
 func (cli *CLI) Run() {
 	isValidArg()
-
+	createWalletCmd := flag.NewFlagSet("createwallet", flag.ExitOnError)
 	sendBlockCmd := flag.NewFlagSet("send", flag.ExitOnError)
 	printBlockchainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
 	createBlockchainWithGeneisCmd := flag.NewFlagSet("createblockchain", flag.ExitOnError)
@@ -68,14 +68,19 @@ func (cli *CLI) Run() {
 		if err != nil {
 			log.Panic(err)
 		}
+	case "createwallet":
+		err := createWalletCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
 	default:
 		printUsage()
 		os.Exit(1)
 	}
 
 	if createBlockchainWithGeneisCmd.Parsed() {
-		if *flagCreateBlockchainAddress == "" {
-			fmt.Println("address cannot be empty ")
+		if core.IsValidAddress([]byte(*flagCreateBlockchainAddress)) == false {
+			fmt.Println("invalid address")
 			printUsage()
 			os.Exit(11)
 		}
@@ -88,16 +93,15 @@ func (cli *CLI) Run() {
 			printUsage()
 			os.Exit(1)
 		}
-		//fmt.Println(*flagAddBlockData)
-		//cli.addBlock([]*core.Transaction{})
-		//fmt.Println(*flagSendFrom)
-		//fmt.Println(*flagSendTo)
-		//fmt.Println(*flagSendAmount)
-		//
-		//fmt.Println(core.Json2Array(*flagSendFrom))
-		//fmt.Println(core.Json2Array(*flagSendTo))
-		//fmt.Println(core.Json2Array(*flagSendAmount))
-		cli.send(core.Json2Array(*flagSendFrom), core.Json2Array(*flagSendTo), core.Json2Array(*flagSendAmount))
+		from := core.Json2Array(*flagSendFrom)
+		to := core.Json2Array(*flagSendTo)
+		for index, _ := range from {
+			if core.IsValidAddress([]byte(from[index])) == false || core.IsValidAddress([]byte(to[index])) == false {
+				fmt.Println("invalid address")
+				os.Exit(1)
+			}
+		}
+		cli.send(from, to, core.Json2Array(*flagSendAmount))
 	}
 
 	if getBalanceCmd.Parsed() {
@@ -106,6 +110,10 @@ func (cli *CLI) Run() {
 			os.Exit(1)
 		}
 		cli.getBalance(*flagGetBalanceWithAddress)
+	}
+
+	if createWalletCmd.Parsed() {
+		cli.createWallet()
 	}
 
 	if printBlockchainCmd.Parsed() {
