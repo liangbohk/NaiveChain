@@ -6,7 +6,8 @@ import (
 )
 
 func (cli *CLI) createWallet() {
-	wallets := core.NewWallets()
+	wallets, _ := core.NewWallets()
 	wallets.CreateNewWallet()
-	fmt.Println(wallets.Wallets)
+
+	fmt.Println(wallets.WalletsMap)
 }

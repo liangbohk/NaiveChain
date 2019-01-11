@@ -16,10 +16,10 @@ func test() {
 	//fmt.Printf("%s",hex.EncodeToString(address))
 	//fmt.Println(wallet.IsValidAddress(address))
 
-	wallets := core.NewWallets()
+	wallets, _ := core.NewWallets()
 	wallets.CreateNewWallet()
 	wallets.CreateNewWallet()
-	fmt.Println(wallets.Wallets)
+	fmt.Println(wallets.WalletsMap)
 }
 
 func main() {
