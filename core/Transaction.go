@@ -24,8 +24,9 @@ func (tx *Transaction) IsCoinbaseTransaction() bool {
 
 //transaction from coinbase
 func NewCoinbaseTransaction(address string) *Transaction {
-	txInput := &TXInput{[]byte{}, -1, "Genesis Data"}
-	txOutput := &TXOutput{10, address}
+	txInput := &TXInput{[]byte{}, -1, nil, []byte{}}
+	txOutput := NewTXOutput(10, address)
+	//txOutput := &TXOutput{10, address}
 	txCoinbase := &Transaction{[]byte{}, []*TXInput{txInput}, []*TXOutput{txOutput}}
 	txCoinbase.AttachHash()
 	return txCoinbase
@@ -46,6 +47,9 @@ func (tx *Transaction) AttachHash() {
 
 func NewSimpleTransaction(from string, to string, amount int, blc *Blockchain, txs []*Transaction) *Transaction {
 
+	wallets, _ := NewWallets()
+	wallet := wallets.WalletsMap[from]
+
 	//find usable UTXOs
 	restValue, dic := blc.FindSpendableUTXOs(from, amount, txs)
 	fmt.Printf("restValue:%d, dic:%x", restValue, dic)
@@ -54,7 +58,7 @@ func NewSimpleTransaction(from string, to string, amount int, blc *Blockchain, t
 	var txIns []*TXInput
 	for hash, indexArray := range dic {
 		for _, i := range indexArray {
-			txInput := &TXInput{[]byte(hash), i, from}
+			txInput := &TXInput{[]byte(hash), i, nil, wallet.PublicKey}
 			txIns = append(txIns, txInput)
 		}
 	}
@@ -64,10 +68,12 @@ func NewSimpleTransaction(from string, to string, amount int, blc *Blockchain, t
 
 	var txOuts []*TXOutput
 	//send
-	txOutput := &TXOutput{int64(amount), to}
+	txOutput := NewTXOutput(int64(amount), to)
+	//txOutput := &TXOutput{int64(amount), to}
 	txOuts = append(txOuts, txOutput)
 	//change
-	txOutput = &TXOutput{int64(restValue) - int64(amount), from}
+	txOutput = NewTXOutput(int64(restValue)-int64(amount), from)
+	//txOutput = &TXOutput{int64(restValue) - int64(amount), from}
 	txOuts = append(txOuts, txOutput)
 
 	tx := &Transaction{[]byte{}, txIns, txOuts}

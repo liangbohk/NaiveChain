@@ -16,7 +16,7 @@ type CLI struct {
 //print command usage
 func printUsage() {
 	fmt.Println("Usage:")
-	fmt.Println("\tgetaddresslists -- output all address")
+	fmt.Println("\tgetaddresslist -- output all address")
 	fmt.Println("\tcreatewallet -- create a wallet")
 	fmt.Println("\tcreateblockchain -address ADDRESS -- create a blockchain")
 	fmt.Println("\tsend -from FROM -to TO -amount AMOUNT -- send value by transaction")
@@ -34,7 +34,7 @@ func isValidArg() {
 
 func (cli *CLI) Run() {
 	isValidArg()
-	getAddressListsCmd := flag.NewFlagSet("getaddresslists", flag.ExitOnError)
+	getAddressListCmd := flag.NewFlagSet("getaddresslist", flag.ExitOnError)
 	createWalletCmd := flag.NewFlagSet("createwallet", flag.ExitOnError)
 	sendBlockCmd := flag.NewFlagSet("send", flag.ExitOnError)
 	printBlockchainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
@@ -75,8 +75,8 @@ func (cli *CLI) Run() {
 		if err != nil {
 			log.Panic(err)
 		}
-	case "getaddresslists":
-		err := getAddressListsCmd.Parse(os.Args[2:])
+	case "getaddresslist":
+		err := getAddressListCmd.Parse(os.Args[2:])
 		if err != nil {
 			log.Panic(err)
 		}
@@ -122,8 +122,8 @@ func (cli *CLI) Run() {
 	if createWalletCmd.Parsed() {
 		cli.createWallet()
 	}
-	if getAddressListsCmd.Parsed() {
-		cli.getAddressLists()
+	if getAddressListCmd.Parsed() {
+		cli.getAddressList()
 	}
 
 	if printBlockchainCmd.Parsed() {

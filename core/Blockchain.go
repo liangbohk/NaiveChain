@@ -134,13 +134,13 @@ func (blc *Blockchain) PrintChain() {
 				fmt.Println("TXInput:")
 				fmt.Printf("%s\n", hex.EncodeToString(input.TxHash))
 				fmt.Printf("%d\n", input.TxOutIndex)
-				fmt.Printf("%s\n", input.ScriptSig)
+				fmt.Printf("%s\n", input.Pubkey)
 			}
 
 			for _, output := range tx.TxOuts {
 				fmt.Println("TXOutput:")
 				fmt.Println(output.Value)
-				fmt.Println(output.ScriptPubkey)
+				fmt.Println(output.Sha256Ripemd160HashPubkey)
 			}
 		}
 
@@ -186,7 +186,8 @@ func (blc *Blockchain) UnspentTxOuts(address string, txs []*Transaction) []*UTXO
 		//txinput
 		if tx.IsCoinbaseTransaction() == false {
 			for _, in := range tx.TxIns {
-				if in.UnLockScriptSigWithAddress(address) {
+				versonSha256Ripemd160HashChecksum := Base58Decode([]byte(address))
+				if in.UnLockRipemd160Hash(versonSha256Ripemd160HashChecksum[1 : len(versonSha256Ripemd160HashChecksum)-addressChecksumLen]) {
 					key := hex.EncodeToString(in.TxHash)
 					spentTXOutputs[key] = append(spentTXOutputs[key], in.TxOutIndex)
 				}
@@ -233,7 +234,9 @@ func (blc *Blockchain) UnspentTxOuts(address string, txs []*Transaction) []*UTXO
 			//txinput
 			if tx.IsCoinbaseTransaction() == false {
 				for _, in := range tx.TxIns {
-					if in.UnLockScriptSigWithAddress(address) {
+					versonSha256Ripemd160HashChecksum := Base58Decode([]byte(address))
+					if in.UnLockRipemd160Hash(versonSha256Ripemd160HashChecksum[1 : len(versonSha256Ripemd160HashChecksum)-addressChecksumLen]) {
+						//if in.UnLockScriptSigWithAddress(address) {
 						key := hex.EncodeToString(in.TxHash)
 						spentTXOutputs[key] = append(spentTXOutputs[key], in.TxOutIndex)
 					}

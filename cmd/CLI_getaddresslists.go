@@ -6,7 +6,7 @@ import (
 )
 
 //print all addresses
-func (cli *CLI) getAddressLists() {
+func (cli *CLI) getAddressList() {
 	wallets, _ := core.NewWallets()
 	for address, _ := range wallets.WalletsMap {
 		fmt.Println(address)

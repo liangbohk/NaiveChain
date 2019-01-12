@@ -57,7 +57,7 @@ func IsValidAddress(address []byte) bool {
 //get an address
 func (w *Wallet) GetAddress() []byte {
 	//sha256 and ripemd160
-	publicKeyHash := w.Ripemd160Hash(w.PublicKey)
+	publicKeyHash := Sha256Ripemd160Hash(w.PublicKey)
 	versionAndRipemdHash := append([]byte{version}, publicKeyHash...)
 	checkSumBytes := CheckSum(versionAndRipemdHash)
 
@@ -68,7 +68,7 @@ func (w *Wallet) GetAddress() []byte {
 }
 
 //ripemd160
-func (w *Wallet) Ripemd160Hash(publicKey []byte) []byte {
+func Sha256Ripemd160Hash(publicKey []byte) []byte {
 	//256
 	hash256 := sha256.New()
 	hash256.Write(publicKey)
