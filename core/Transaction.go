@@ -2,8 +2,11 @@ package core
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/gob"
+	"encoding/hex"
 	"fmt"
 	"log"
 )
@@ -52,7 +55,7 @@ func NewSimpleTransaction(from string, to string, amount int, blc *Blockchain, t
 
 	//find usable UTXOs
 	restValue, dic := blc.FindSpendableUTXOs(from, amount, txs)
-	fmt.Printf("restValue:%d, dic:%x", restValue, dic)
+	//fmt.Printf("restValue:%d, dic:%x", restValue, dic)
 
 	//build a tx input array
 	var txIns []*TXInput
@@ -78,5 +81,65 @@ func NewSimpleTransaction(from string, to string, amount int, blc *Blockchain, t
 
 	tx := &Transaction{[]byte{}, txIns, txOuts}
 	tx.AttachHash()
+
+	//signature
+	blc.SignTransaction(tx, wallet.PrivateKey)
+
 	return tx
+}
+
+//trimmed copy
+func (tx *Transaction) TrimmedCopy() Transaction {
+	var txInputs []*TXInput
+	var txOutputs []*TXOutput
+
+	for _, txInput := range tx.TxIns {
+		txInputs = append(txInputs, &TXInput{txInput.TxHash, txInput.TxOutIndex, nil, nil})
+	}
+	for _, txOutput := range tx.TxOuts {
+		txOutputs = append(txOutputs, &TXOutput{txOutput.Value, txOutput.Sha256Ripemd160HashPubkey})
+	}
+
+	txCopy := Transaction{tx.TxHash, txInputs, txOutputs}
+	return txCopy
+}
+
+//return a hash
+func (tx *Transaction) Hash() []byte {
+	txCopy := tx
+	txCopy.TxHash = []byte{}
+	txCopy.AttachHash()
+	return txCopy.TxHash[:]
+}
+
+//sign a transaction with a privateKey
+func (tx *Transaction) Sign(privateKey ecdsa.PrivateKey, prevTXs map[string]Transaction) {
+	if tx.IsCoinbaseTransaction() {
+		return
+	}
+	fmt.Println(prevTXs)
+	for _, txInput := range tx.TxIns {
+		if prevTXs[hex.EncodeToString(txInput.TxHash)].TxHash == nil {
+			log.Panic("previous transaction fault!")
+		}
+	}
+
+	txCopy := tx.TrimmedCopy()
+
+	for txInputIndex, txInput := range txCopy.TxIns {
+		prevTx := prevTXs[hex.EncodeToString(txInput.TxHash)]
+		txCopy.TxIns[txInputIndex].Signature = nil
+		txCopy.TxIns[txInputIndex].Pubkey = prevTx.TxOuts[txInput.TxOutIndex].Sha256Ripemd160HashPubkey
+		txCopy.TxHash = txCopy.Hash()
+		txCopy.TxIns[txInputIndex].Pubkey = nil
+
+		//signature
+		r, s, err := ecdsa.Sign(rand.Reader, &privateKey, txCopy.TxHash)
+		if err != nil {
+			log.Panic(err)
+		}
+		signature := append(r.Bytes(), s.Bytes()...)
+		tx.TxIns[txInputIndex].Signature = signature
+	}
+
 }

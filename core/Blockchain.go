@@ -1,6 +1,8 @@
 package core
 
 import (
+	"bytes"
+	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
 	"github.com/boltdb/bolt"
@@ -294,6 +296,50 @@ func (blc *Blockchain) GetBanlance(address string) int64 {
 	}
 	return amount
 }
+
+//find a transaction by a id(txhash)
+func (blc *Blockchain) FindTransaction(txHash []byte) (Transaction, error) {
+	//traverse the blockchain
+	iter := blc.Iterator()
+	for {
+		block := iter.Next()
+		for _, tx := range block.Txs {
+			if bytes.Compare(txHash, tx.TxHash) == 0 {
+				return *tx, nil
+			}
+		}
+
+		//stop condition
+		var hashInt big.Int
+		hashInt.SetBytes(block.PrevHash)
+		if hashInt.Cmp(big.NewInt(0)) == 0 {
+			break
+		}
+	}
+	return Transaction{}, nil
+}
+
+//sign transaction
+func (blc *Blockchain) SignTransaction(tx *Transaction, privateKey ecdsa.PrivateKey) {
+	if tx.IsCoinbaseTransaction() {
+		return
+	}
+
+	prevTXs := make(map[string]Transaction)
+	for _, txInput := range tx.TxIns {
+		print(txInput.TxHash)
+		prevTX, err := blc.FindTransaction(txInput.TxHash)
+		if err != nil {
+			log.Panic(err)
+		}
+		prevTXs[hex.EncodeToString(prevTX.TxHash)] = prevTX
+	}
+
+	tx.Sign(privateKey, prevTXs)
+
+}
+
+//sign transaction with private key
 
 //find utxo that can be used
 func (blc *Blockchain) FindSpendableUTXOs(from string, amount int, txs []*Transaction) (int64, map[string][]int) {
