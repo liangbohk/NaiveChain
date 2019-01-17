@@ -336,10 +336,7 @@ func (blc *Blockchain) SignTransaction(tx *Transaction, privateKey ecdsa.Private
 
 	prevTXs := make(map[string]Transaction)
 	for _, txInput := range tx.TxIns {
-		fmt.Printf("TxHash:%s\n", hex.EncodeToString(txInput.TxHash))
 		prevTX, err := blc.FindTransaction(txInput.TxHash, txs_packaged)
-		//fmt.Printf("TxHash:%s\n",hex.EncodeToString(prevTX.TxHash))
-		//fmt.Println(prevTX.TxIns,prevTX.TxOuts)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -356,13 +353,6 @@ func (blc *Blockchain) SignTransaction(tx *Transaction, privateKey ecdsa.Private
 func (blc *Blockchain) FindSpendableUTXOs(from string, amount int, txs []*Transaction) (int64, map[string][]int) {
 	//get utxo
 	utxos := blc.UnspentTxOuts(from, txs)
-
-	//print utxo
-	//for _, utxo := range utxos {
-	//	fmt.Println(utxo.TXHash)
-	//	fmt.Println(utxo.Index)
-	//	fmt.Println("----------------")
-	//}
 
 	//traverse utxos
 	var value int64 = 0
@@ -395,7 +385,6 @@ func (blc *Blockchain) MineNewBlock(from []string, to []string, amount []string)
 		}
 		tx := NewSimpleTransaction(from[index], to[index], value, blc, txs)
 		txs = append(txs, tx)
-		fmt.Printf("NO. %d\n", index)
 	}
 
 	blc.AddBlockToBlockchain(txs)

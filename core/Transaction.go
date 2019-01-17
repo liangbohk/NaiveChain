@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"encoding/gob"
 	"encoding/hex"
-	"fmt"
 	"log"
 )
 
@@ -55,7 +54,6 @@ func NewSimpleTransaction(from string, to string, amount int, blc *Blockchain, t
 
 	//find usable UTXOs
 	restValue, dic := blc.FindSpendableUTXOs(from, amount, txs)
-	fmt.Printf("restValue:%d, dic:%x\n", restValue, dic)
 
 	//build a tx input array
 	var txIns []*TXInput
@@ -65,9 +63,6 @@ func NewSimpleTransaction(from string, to string, amount int, blc *Blockchain, t
 			txIns = append(txIns, txInput)
 		}
 	}
-
-	//txInput := &TXInput{[]byte("A Simple Transaction Hash"), 0, from}
-	//txIns = append(txIns, txInput)
 
 	var txOuts []*TXOutput
 	//send
@@ -117,11 +112,9 @@ func (tx *Transaction) Sign(privateKey ecdsa.PrivateKey, prevTXs map[string]Tran
 	if tx.IsCoinbaseTransaction() {
 		return
 	}
-	//fmt.Println(prevTXs)
 	for _, txInput := range tx.TxIns {
 		if prevTXs[hex.EncodeToString(txInput.TxHash)].TxHash == nil {
-			fmt.Println(txInput)
-			fmt.Println(prevTXs[hex.EncodeToString(txInput.TxHash)].TxHash)
+
 			log.Panic("previous transaction fault!")
 		}
 	}
