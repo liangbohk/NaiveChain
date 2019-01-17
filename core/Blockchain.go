@@ -298,9 +298,18 @@ func (blc *Blockchain) GetBanlance(address string) int64 {
 }
 
 //find a transaction by a id(txhash)
-func (blc *Blockchain) FindTransaction(txHash []byte) (Transaction, error) {
+func (blc *Blockchain) FindTransaction(txHash []byte, txs_packaged []*Transaction) (Transaction, error) {
+
+	//before discussing tx in previous blocks, also you need to discuss txs already packaged in this block
+	for _, tx := range txs_packaged {
+		if bytes.Compare(txHash, tx.TxHash) == 0 {
+			return *tx, nil
+		}
+	}
+
 	//traverse the blockchain
 	iter := blc.Iterator()
+
 	for {
 		block := iter.Next()
 		for _, tx := range block.Txs {
@@ -320,15 +329,17 @@ func (blc *Blockchain) FindTransaction(txHash []byte) (Transaction, error) {
 }
 
 //sign transaction
-func (blc *Blockchain) SignTransaction(tx *Transaction, privateKey ecdsa.PrivateKey) {
+func (blc *Blockchain) SignTransaction(tx *Transaction, privateKey ecdsa.PrivateKey, txs_packaged []*Transaction) {
 	if tx.IsCoinbaseTransaction() {
 		return
 	}
 
 	prevTXs := make(map[string]Transaction)
 	for _, txInput := range tx.TxIns {
-		print(txInput.TxHash)
-		prevTX, err := blc.FindTransaction(txInput.TxHash)
+		fmt.Printf("TxHash:%s\n", hex.EncodeToString(txInput.TxHash))
+		prevTX, err := blc.FindTransaction(txInput.TxHash, txs_packaged)
+		//fmt.Printf("TxHash:%s\n",hex.EncodeToString(prevTX.TxHash))
+		//fmt.Println(prevTX.TxIns,prevTX.TxOuts)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -347,11 +358,11 @@ func (blc *Blockchain) FindSpendableUTXOs(from string, amount int, txs []*Transa
 	utxos := blc.UnspentTxOuts(from, txs)
 
 	//print utxo
-	for _, utxo := range utxos {
-		fmt.Println(utxo.TXHash)
-		fmt.Println(utxo.Index)
-		fmt.Println("----------------")
-	}
+	//for _, utxo := range utxos {
+	//	fmt.Println(utxo.TXHash)
+	//	fmt.Println(utxo.Index)
+	//	fmt.Println("----------------")
+	//}
 
 	//traverse utxos
 	var value int64 = 0
@@ -384,6 +395,7 @@ func (blc *Blockchain) MineNewBlock(from []string, to []string, amount []string)
 		}
 		tx := NewSimpleTransaction(from[index], to[index], value, blc, txs)
 		txs = append(txs, tx)
+		fmt.Printf("NO. %d\n", index)
 	}
 
 	blc.AddBlockToBlockchain(txs)
