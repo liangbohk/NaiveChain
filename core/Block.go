@@ -67,7 +67,7 @@ func (block *Block) Serialize() []byte {
 }
 
 //deserialize the block bytes
-func Deserialize(blockbytes []byte) *Block {
+func DeserializeBlock(blockbytes []byte) *Block {
 	var block Block
 
 	decoder := gob.NewDecoder(bytes.NewReader(blockbytes))

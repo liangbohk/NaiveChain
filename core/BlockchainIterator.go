@@ -24,7 +24,7 @@ func (blcIter *BlockchainIterator) Next() *Block {
 	err := blcIter.DB.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(tableName))
 		if bucket != nil {
-			curBlock = Deserialize(bucket.Get(blcIter.CurHash))
+			curBlock = DeserializeBlock(bucket.Get(blcIter.CurHash))
 			blcIter.CurHash = curBlock.PrevHash
 		}
 		return nil

@@ -8,4 +8,7 @@ func (cli *CLI) createGenesisBlockChain(address string) {
 	//create genesis block
 	blc := core.CreateBlockchainWithAGenesisBlock(address)
 	defer blc.DB.Close()
+
+	utxoSet := &core.UTXOSet{blc}
+	utxoSet.Reset()
 }

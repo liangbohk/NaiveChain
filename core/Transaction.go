@@ -3,14 +3,20 @@ package core
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/gob"
 	"encoding/hex"
+	"fmt"
 	"log"
+	"math/big"
 )
 
 type Transaction struct {
+	//the height of the block where the transaction packaged in
+	BlockHeight int64
+
 	//transaction hash
 	TxHash []byte
 
@@ -25,12 +31,13 @@ func (tx *Transaction) IsCoinbaseTransaction() bool {
 }
 
 //transaction from coinbase
-func NewCoinbaseTransaction(address string) *Transaction {
+func NewCoinbaseTransaction(blockHeight int64, address string) *Transaction {
 	txInput := &TXInput{[]byte{}, -1, nil, []byte{}}
 	txOutput := NewTXOutput(10, address)
 	//txOutput := &TXOutput{10, address}
-	txCoinbase := &Transaction{[]byte{}, []*TXInput{txInput}, []*TXOutput{txOutput}}
+	txCoinbase := &Transaction{blockHeight, []byte{}, []*TXInput{txInput}, []*TXOutput{txOutput}}
 	txCoinbase.AttachHash()
+	fmt.Printf("coinbase %s\n", hex.EncodeToString(txCoinbase.TxHash))
 	return txCoinbase
 }
 
@@ -39,6 +46,14 @@ func (tx *Transaction) AttachHash() {
 	var res bytes.Buffer
 	//initialize an encoder
 	encoder := gob.NewEncoder(&res)
+	//data := bytes.Join([][]byte{Int2ByteArray(tx.blockHeight)}, []byte{})
+	//for _, txInput := range tx.TxIns {
+	//	data = bytes.Join([][]byte{data, txInput.Serialize()}, []byte{})
+	//}
+	//for _, txOutput := range tx.TxOuts {
+	//	data = bytes.Join([][]byte{data, txOutput.Serialize()}, []byte{})
+	//}
+
 	err := encoder.Encode(tx)
 	if err != nil {
 		log.Panic(err)
@@ -47,7 +62,7 @@ func (tx *Transaction) AttachHash() {
 	tx.TxHash = hash[:]
 }
 
-func NewSimpleTransaction(from string, to string, amount int, blc *Blockchain, txs []*Transaction) *Transaction {
+func NewSimpleTransaction(blockHeight int64, from string, to string, amount int, blc *Blockchain, txs []*Transaction) *Transaction {
 
 	wallets, _ := NewWallets()
 	wallet := wallets.WalletsMap[from]
@@ -74,7 +89,7 @@ func NewSimpleTransaction(from string, to string, amount int, blc *Blockchain, t
 	//txOutput = &TXOutput{int64(restValue) - int64(amount), from}
 	txOuts = append(txOuts, txOutput)
 
-	tx := &Transaction{[]byte{}, txIns, txOuts}
+	tx := &Transaction{blockHeight, []byte{}, txIns, txOuts}
 	tx.AttachHash()
 
 	//signature
@@ -95,7 +110,7 @@ func (tx *Transaction) TrimmedCopy() Transaction {
 		txOutputs = append(txOutputs, &TXOutput{txOutput.Value, txOutput.Sha256Ripemd160HashPubkey})
 	}
 
-	txCopy := Transaction{tx.TxHash, txInputs, txOutputs}
+	txCopy := Transaction{tx.BlockHeight, tx.TxHash, txInputs, txOutputs}
 	return txCopy
 }
 
@@ -136,5 +151,49 @@ func (tx *Transaction) Sign(privateKey ecdsa.PrivateKey, prevTXs map[string]Tran
 		signature := append(r.Bytes(), s.Bytes()...)
 		tx.TxIns[txInputIndex].Signature = signature
 	}
+
+}
+
+//verify transaction signature
+func (tx *Transaction) Verify(prevTXs map[string]Transaction) bool {
+	if tx.IsCoinbaseTransaction() {
+		return true
+	}
+
+	for _, txInput := range tx.TxIns {
+		if prevTXs[hex.EncodeToString(txInput.TxHash)].TxHash == nil {
+			log.Panic("not valid previous transaction")
+		}
+	}
+
+	txCopy := tx.TrimmedCopy()
+	curve := elliptic.P256()
+
+	for txInputIndex, txInput := range tx.TxIns {
+		prevTx := prevTXs[hex.EncodeToString(txInput.TxHash)]
+		txCopy.TxIns[txInputIndex].Signature = nil
+		txCopy.TxIns[txInputIndex].Pubkey = prevTx.TxOuts[txInput.TxOutIndex].Sha256Ripemd160HashPubkey
+		txCopy.TxHash = txCopy.Hash()
+		txCopy.TxIns[txInputIndex].Pubkey = nil
+
+		//private key
+		r, s := big.Int{}, big.Int{}
+		signatureLength := len(txInput.Signature)
+		r.SetBytes(txInput.Signature[:(signatureLength / 2)])
+		s.SetBytes(txInput.Signature[(signatureLength / 2):])
+
+		x, y := big.Int{}, big.Int{}
+		keyLength := len(txInput.Pubkey)
+		x.SetBytes(txInput.Pubkey[:(keyLength / 2)])
+		y.SetBytes(txInput.Pubkey[(keyLength / 2):])
+
+		rawPubkey := ecdsa.PublicKey{curve, &x, &y}
+		if !ecdsa.Verify(&rawPubkey, txCopy.TxHash, &r, &s) {
+			return false
+		}
+
+	}
+
+	return true
 
 }

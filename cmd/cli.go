@@ -22,6 +22,7 @@ func printUsage() {
 	fmt.Println("\tsend -from FROM -to TO -amount AMOUNT -- send value by transaction")
 	fmt.Println("\tgetbalance -address ADDRESS -- get balance of an address")
 	fmt.Println("\tprintchain -- print the block chain")
+	fmt.Println("\ttest -- test")
 }
 
 //check if the args are valid
@@ -40,6 +41,7 @@ func (cli *CLI) Run() {
 	printBlockchainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
 	createBlockchainWithGeneisCmd := flag.NewFlagSet("createblockchain", flag.ExitOnError)
 	getBalanceCmd := flag.NewFlagSet("getbalance", flag.ExitOnError)
+	testCmd := flag.NewFlagSet("test", flag.ExitOnError)
 
 	flagSendFrom := sendBlockCmd.String("from", "", "source address")
 	flagSendTo := sendBlockCmd.String("to", "", "dist address")
@@ -77,6 +79,11 @@ func (cli *CLI) Run() {
 		}
 	case "getaddresslist":
 		err := getAddressListCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
+	case "test":
+		err := testCmd.Parse(os.Args[2:])
 		if err != nil {
 			log.Panic(err)
 		}
@@ -129,5 +136,9 @@ func (cli *CLI) Run() {
 	if printBlockchainCmd.Parsed() {
 		//fmt.Println("blockchain info")
 		cli.printChain()
+	}
+
+	if testCmd.Parsed() {
+		cli.TestMethod()
 	}
 }

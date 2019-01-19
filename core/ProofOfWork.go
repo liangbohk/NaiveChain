@@ -62,11 +62,13 @@ func (pow *ProofOfWork) Run() ([]byte, int64) {
 		dataBytes := pow.prepareData(nonce)
 		//generate hash
 		hash = sha256.Sum256(dataBytes)
+		fmt.Printf("\r%x", hash)
 
 		//verify hash, return if satisfied
 		hashInt.SetBytes(hash[:])
 		if pow.target.Cmp(hashInt) == 1 {
-			fmt.Printf("\r%x\n", hash)
+			fmt.Printf("\n")
+			//fmt.Printf("\r%x\n", hash)
 			break
 		}
 		nonce = nonce + 1

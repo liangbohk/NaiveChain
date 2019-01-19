@@ -1,6 +1,10 @@
 package core
 
-import "bytes"
+import (
+	"bytes"
+	"encoding/gob"
+	"log"
+)
 
 type TXOutput struct {
 	//value
@@ -10,10 +14,35 @@ type TXOutput struct {
 	Sha256Ripemd160HashPubkey []byte
 }
 
+//serialize the txoutput
+func (txOutput *TXOutput) Serialize() []byte {
+	var res bytes.Buffer
+	//initialize an encoder
+	encoder := gob.NewEncoder(&res)
+	err := encoder.Encode(txOutput)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return res.Bytes()
+}
+
+//deserialize the txoutput bytes
+func DeserializeTXOutput(txOutputBytes []byte) *TXOutput {
+	var txOutput TXOutput
+
+	decoder := gob.NewDecoder(bytes.NewReader(txOutputBytes))
+	err := decoder.Decode(&txOutput)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return &txOutput
+}
+
 //check if the sig equals address
 func (txOutput *TXOutput) UnLockScriptPubkeyWithAddress(address string) bool {
 	publicKeyHash := Base58Decode([]byte(address))
-
 	return bytes.Compare(txOutput.Sha256Ripemd160HashPubkey, publicKeyHash[1:len(publicKeyHash)-addressChecksumLen]) == 0
 }
 

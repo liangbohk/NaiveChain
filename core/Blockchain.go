@@ -57,7 +57,7 @@ func CreateBlockchainWithAGenesisBlock(address string) *Blockchain {
 
 		if bucket != nil {
 			//create transaction
-			txCoinbase := NewCoinbaseTransaction(address)
+			txCoinbase := NewCoinbaseTransaction(0, address)
 
 			//generate a genesis block
 			genesisBlock := CreateGenesisBlock([]*Transaction{txCoinbase})
@@ -88,7 +88,8 @@ func (blc *Blockchain) AddBlockToBlockchain(txs []*Transaction) {
 		//get the table from the database
 		table := tx.Bucket([]byte(tableName))
 		//get the newest block
-		lastBlock := Deserialize(table.Get(blc.Tail))
+		lastBlock := DeserializeBlock(table.Get(blc.Tail))
+
 		//create a new block
 		block := NewBlock(txs, lastBlock.Height+1, lastBlock.Hash)
 		//save the block to the database
@@ -110,6 +111,19 @@ func (blc *Blockchain) AddBlockToBlockchain(txs []*Transaction) {
 		log.Panic(err)
 	}
 
+}
+
+func (blc *Blockchain) VerifyTransactions(tx *Transaction, txs []*Transaction) bool {
+	prevTXs := make(map[string]Transaction)
+	for _, txInput := range tx.TxIns {
+		prevTX, err := blc.FindTransaction(txInput.TxHash, txs)
+		if err != nil {
+			log.Panic(err)
+		}
+		prevTXs[hex.EncodeToString(prevTX.TxHash)] = prevTX
+	}
+
+	return tx.Verify(prevTXs)
 }
 
 //return a point to the iterator
@@ -134,15 +148,15 @@ func (blc *Blockchain) PrintChain() {
 			fmt.Printf("%x\n", tx.TxHash)
 			for _, input := range tx.TxIns {
 				fmt.Println("TXInput:")
-				fmt.Printf("%s\n", hex.EncodeToString(input.TxHash))
-				fmt.Printf("%d\n", input.TxOutIndex)
-				fmt.Printf("%s\n", input.Pubkey)
+				fmt.Printf("\t%s\n", hex.EncodeToString(input.TxHash))
+				fmt.Printf("\t%d\n", input.TxOutIndex)
+				fmt.Printf("\t%x\n", input.Pubkey)
 			}
 
 			for _, output := range tx.TxOuts {
 				fmt.Println("TXOutput:")
-				fmt.Println(output.Value)
-				fmt.Println(output.Sha256Ripemd160HashPubkey)
+				fmt.Printf("\tvalue:%d\n", output.Value)
+				fmt.Printf("\tsha256Ripemd160HashPubkey:%x\n", output.Sha256Ripemd160HashPubkey)
 			}
 		}
 
@@ -152,6 +166,12 @@ func (blc *Blockchain) PrintChain() {
 
 //get a blockchain object
 func BlockchainObject() *Blockchain {
+	//check if the database file exist
+
+	if !DBExist() {
+		log.Fatal("no blockchain")
+	}
+
 	//open the database
 	db, err := bolt.Open(dbName, 0600, nil)
 	if err != nil {
@@ -166,13 +186,35 @@ func BlockchainObject() *Blockchain {
 			tailHash = b.Get([]byte("tail"))
 
 		} else {
-			log.Fatal("no blockchain")
+			err := os.Remove(dbName)
+			if err != nil {
+				log.Panic(err)
+			}
+			//log.Fatal("no blockchain")
 		}
 		return nil
 
 	})
 
 	return &Blockchain{tailHash, db}
+}
+
+func (blc *Blockchain) getBlockchainHeight() (int64, error) {
+	var height int64 = 0
+	err := blc.DB.View(func(tx *bolt.Tx) error {
+		//get the table from the database
+		table := tx.Bucket([]byte(tableName))
+		if table != nil {
+			//get the newest block
+			lastBlock := DeserializeBlock(table.Get(blc.Tail))
+			height = lastBlock.Height
+		} else {
+			log.Fatal("no blockchain")
+		}
+		return nil
+
+	})
+	return height, err
 }
 
 //return transactions with unspent TXOutput
@@ -221,6 +263,7 @@ func (blc *Blockchain) UnspentTxOuts(address string, txs []*Transaction) []*UTXO
 					}
 
 				}
+
 			}
 		}
 	}
@@ -257,6 +300,7 @@ func (blc *Blockchain) UnspentTxOuts(address string, txs []*Transaction) []*UTXO
 								for _, i := range indexArr {
 									if txHash == hex.EncodeToString(tx.TxHash) && index == i {
 										continue loop1
+
 									}
 								}
 
@@ -313,6 +357,7 @@ func (blc *Blockchain) FindTransaction(txHash []byte, txs_packaged []*Transactio
 	for {
 		block := iter.Next()
 		for _, tx := range block.Txs {
+			//fmt.Printf("%s<=>%s\n",hex.EncodeToString(txHash),hex.EncodeToString(tx.TxHash))
 			if bytes.Compare(txHash, tx.TxHash) == 0 {
 				return *tx, nil
 			}
@@ -377,18 +422,91 @@ func (blc *Blockchain) MineNewBlock(from []string, to []string, amount []string)
 
 	//build new transactions
 	//set up the transactions.Note: the tx order in txs is specially setup
+	blockHeight, err := blc.getBlockchainHeight()
+	if err != nil {
+		log.Panic(err)
+	}
 	var txs []*Transaction
 	for index, _ := range from {
 		value, err := strconv.Atoi(amount[index])
 		if err != nil {
 			log.Panic(err)
 		}
-		tx := NewSimpleTransaction(from[index], to[index], value, blc, txs)
+		tx := NewSimpleTransaction(blockHeight+1, from[index], to[index], value, blc, txs)
 		txs = append(txs, tx)
 	}
 
-	blc.AddBlockToBlockchain(txs)
+	//coinbase transaction,let from[0] be the miner node
+	tx := NewCoinbaseTransaction(blockHeight+1, from[0])
+	txs = append(txs, tx)
+
+	//verify the signature of txs
+	tmpTxs := []*Transaction{}
+	for _, tx := range txs {
+		if !blc.VerifyTransactions(tx, tmpTxs) {
+			log.Panic("verifying signature failed")
+		}
+		tmpTxs = append(tmpTxs, tx)
+	}
+
+	blc.AddBlockToBlockchain(tmpTxs)
 
 	return blc
 
+}
+
+//return UTXOMap
+func (blc *Blockchain) FindUTXOMap() map[string]UTXOS {
+	//traverse the blockchain
+	iter := blc.Iterator()
+	//spent
+	spentUTXOMap := make(map[string][]*TXInput)
+	utxoMap := make(map[string]UTXOS)
+	for {
+		block := iter.Next()
+		for i := len(block.Txs) - 1; i >= 0; i-- {
+			utxos := UTXOS{[]*UTXO{}}
+
+			tx := block.Txs[i]
+			if !tx.IsCoinbaseTransaction() {
+				for _, txInput := range tx.TxIns {
+					txHash := hex.EncodeToString(txInput.TxHash)
+					spentUTXOMap[txHash] = append(spentUTXOMap[txHash], txInput)
+				}
+			}
+
+			txHash := hex.EncodeToString(tx.TxHash)
+		work:
+			for index, txOutput := range tx.TxOuts {
+				txInputs := spentUTXOMap[txHash]
+				if len(txInputs) > 0 {
+					for _, txInput := range txInputs {
+						outPubkey := txOutput.Sha256Ripemd160HashPubkey
+						inPubkey := txInput.Pubkey
+						if bytes.Compare(outPubkey, Sha256Ripemd160Hash(inPubkey)) == 0 {
+							if index == txInput.TxOutIndex {
+								continue work
+							}
+						}
+
+					}
+					utxo := &UTXO{tx.TxHash, index, txOutput}
+					utxos.UTXOs = append(utxos.UTXOs, utxo)
+				} else {
+					utxo := &UTXO{tx.TxHash, index, txOutput}
+					utxos.UTXOs = append(utxos.UTXOs, utxo)
+				}
+			}
+
+			utxoMap[txHash] = utxos
+
+		}
+
+		var hashInt big.Int
+		hashInt.SetBytes(block.PrevHash)
+		if hashInt.Cmp(big.NewInt(0)) == 0 {
+			break
+		}
+	}
+	return utxoMap
 }
