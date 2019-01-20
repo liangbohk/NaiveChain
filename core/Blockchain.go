@@ -395,7 +395,7 @@ func (blc *Blockchain) SignTransaction(tx *Transaction, privateKey ecdsa.Private
 //sign transaction with private key
 
 //find utxo that can be used
-func (blc *Blockchain) FindSpendableUTXOs(from string, amount int, txs []*Transaction) (int64, map[string][]int) {
+func (blc *Blockchain) FindSpendableUTXOs(from string, amount int64, txs []*Transaction) (int64, map[string][]int) {
 	//get utxo
 	utxos := blc.UnspentTxOuts(from, txs)
 
@@ -404,13 +404,16 @@ func (blc *Blockchain) FindSpendableUTXOs(from string, amount int, txs []*Transa
 	selectedUTXOs := make(map[string][]int)
 	for _, utxo := range utxos {
 		value = value + utxo.Output.Value
-		selectedUTXOs[string(utxo.TXHash)] = append(selectedUTXOs[string(utxo.TXHash)], utxo.Index)
+		txHash := hex.EncodeToString(utxo.TXHash)
+		selectedUTXOs[txHash] = append(selectedUTXOs[txHash], utxo.Index)
+		//selectedUTXOs[string(utxo.TXHash)] = append(selectedUTXOs[string(utxo.TXHash)], utxo.Index)
 		if value >= int64(amount) {
 			break
 		}
 	}
 
 	if value < int64(amount) {
+
 		fmt.Printf("no enough balance %d, need %d ", value, amount)
 		os.Exit(1)
 	}
@@ -426,13 +429,18 @@ func (blc *Blockchain) MineNewBlock(from []string, to []string, amount []string)
 	if err != nil {
 		log.Panic(err)
 	}
+
+	//utxoset
+	utxoSet := &UTXOSet{blc}
+
+	//build transactions
 	var txs []*Transaction
 	for index, _ := range from {
 		value, err := strconv.Atoi(amount[index])
 		if err != nil {
 			log.Panic(err)
 		}
-		tx := NewSimpleTransaction(blockHeight+1, from[index], to[index], value, blc, txs)
+		tx := NewSimpleTransaction(blockHeight+1, from[index], to[index], int64(value), utxoSet, txs)
 		txs = append(txs, tx)
 	}
 

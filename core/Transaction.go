@@ -62,19 +62,24 @@ func (tx *Transaction) AttachHash() {
 	tx.TxHash = hash[:]
 }
 
-func NewSimpleTransaction(blockHeight int64, from string, to string, amount int, blc *Blockchain, txs []*Transaction) *Transaction {
+func NewSimpleTransaction(blockHeight int64, from string, to string, amount int64, utxoSet *UTXOSet, txs []*Transaction) *Transaction {
 
 	wallets, _ := NewWallets()
 	wallet := wallets.WalletsMap[from]
 
 	//find usable UTXOs
-	restValue, dic := blc.FindSpendableUTXOs(from, amount, txs)
+	//restValue, dic := utxoSet.Blc.FindSpendableUTXOs(from,amount,txs)
+	restValue, dic := utxoSet.FindSpendableUTXOS(from, amount, txs)
 
 	//build a tx input array
 	var txIns []*TXInput
 	for hash, indexArray := range dic {
 		for _, i := range indexArray {
-			txInput := &TXInput{[]byte(hash), i, nil, wallet.PublicKey}
+			hashBytes, err := hex.DecodeString(hash)
+			if err != nil {
+				log.Println(err)
+			}
+			txInput := &TXInput{hashBytes, i, nil, wallet.PublicKey}
 			txIns = append(txIns, txInput)
 		}
 	}
@@ -93,7 +98,7 @@ func NewSimpleTransaction(blockHeight int64, from string, to string, amount int,
 	tx.AttachHash()
 
 	//signature
-	blc.SignTransaction(tx, wallet.PrivateKey, txs)
+	utxoSet.Blc.SignTransaction(tx, wallet.PrivateKey, txs)
 
 	return tx
 }
