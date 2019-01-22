@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"encoding/hex"
 	"github.com/boltdb/bolt"
 	"log"
@@ -26,11 +27,11 @@ func (utxoSet *UTXOSet) Reset() {
 		}
 		table, _ = tx.CreateBucket([]byte(utxoTableName))
 		if table != nil {
-			txOutputsMap := utxoSet.Blc.FindUTXOMap()
+			utxosMap := utxoSet.Blc.FindUTXOMap()
 
-			for hash, txOutputs := range txOutputsMap {
+			for hash, utxos := range utxosMap {
 				txHash, _ := hex.DecodeString(hash)
-				table.Put(txHash, txOutputs.Serialize())
+				table.Put(txHash, utxos.Serialize())
 			}
 		}
 
@@ -175,4 +176,90 @@ func (utxoSet *UTXOSet) FindSpendableUTXOS(from string, amount int64, txs []*Tra
 	}
 
 	return money, spendableUTXO
+}
+
+//update utxoset
+func (utxoSet *UTXOSet) Update() {
+	//newest block
+	tailBlock := utxoSet.Blc.Iterator().Next()
+
+	//traverse the transaction
+	txInputs := []*TXInput{}
+	utxoMap := make(map[string]*UTXOS)
+	for _, tx := range tailBlock.Txs {
+		for _, txInput := range tx.TxIns {
+			if len(txInput.TxHash) > 0 {
+				txInputs = append(txInputs, txInput)
+			}
+
+		}
+	}
+	// check if txOutput in current tailBlock is spend(that is, its txInput also in this tx)
+	for _, tx := range tailBlock.Txs {
+		tmpUtxos := &UTXOS{}
+	work:
+		for index, txOutput := range tx.TxOuts {
+			for _, txInput := range txInputs {
+				//if the txOutput has been spent
+				if txInput.TxOutIndex == index && bytes.Compare(tx.TxHash, txInput.TxHash) == 0 {
+					continue work
+				}
+			}
+			tmpUtxos.UTXOs = append(tmpUtxos.UTXOs, &UTXO{tx.TxHash, index, txOutput})
+
+		}
+		txHash := hex.EncodeToString(tx.TxHash)
+		utxoMap[txHash] = tmpUtxos
+	}
+
+	//err:=utxoSet.Blc.DB.Update(func(tx *bolt.Tx) error {
+	//	table :=tx.Bucket([]byte(utxoTableName))
+	//	if table!=nil {
+	//		//add utxos
+	//		for txHash, utxos := range utxoMap {
+	//			hash, _ := hex.DecodeString(txHash)
+	//			table.Put(hash, utxos.Serialize())
+	//		}
+	//	}else {
+	//		log.Panic("no utxo table")
+	//	}
+	//	return nil
+	//})
+
+	err := utxoSet.Blc.DB.Update(func(tx *bolt.Tx) error {
+		table := tx.Bucket([]byte(utxoTableName))
+		if table != nil {
+			//add utxos
+			for txHash, utxos := range utxoMap {
+				hash, _ := hex.DecodeString(txHash)
+				table.Put(hash, utxos.Serialize())
+			}
+
+			for _, txInput := range txInputs {
+				utxosBytes := table.Get(txInput.TxHash)
+				utxos := DeserializeUTXOS(utxosBytes)
+				tmpUtxos := &UTXOS{}
+				deleteFlag := false
+				for _, utxo := range utxos.UTXOs {
+					if txInput.TxOutIndex == utxo.Index && bytes.Compare(utxo.Output.Sha256Ripemd160HashPubkey, Sha256Ripemd160Hash(txInput.Pubkey)) == 0 {
+						deleteFlag = true
+					} else {
+						tmpUtxos.UTXOs = append(tmpUtxos.UTXOs, utxo)
+					}
+				}
+				if deleteFlag {
+					table.Delete(txInput.TxHash)
+					table.Put(txInput.TxHash, tmpUtxos.Serialize())
+
+				}
+			}
+
+		} else {
+			log.Panic("no utxo table!")
+		}
+		return nil
+	})
+	if err != nil {
+		log.Panic(err)
+	}
 }

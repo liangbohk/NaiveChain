@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/elliptic"
 	"encoding/gob"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -28,6 +29,7 @@ func NewWallets() (*Wallets, error) {
 //create a new wallet for a wallets obj
 func (w *Wallets) CreateNewWallet() {
 	wallet := NewWallet()
+	fmt.Println(string(wallet.GetAddress()))
 	w.WalletsMap[string(wallet.GetAddress())] = wallet
 	w.SaveWallets()
 }

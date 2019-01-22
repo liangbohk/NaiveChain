@@ -14,4 +14,7 @@ func (cli *CLI) send(from []string, to []string, amount []string) {
 	defer blc.DB.Close()
 
 	blc.MineNewBlock(from, to, amount)
+
+	utxoSet := &core.UTXOSet{blc}
+	utxoSet.Update()
 }
