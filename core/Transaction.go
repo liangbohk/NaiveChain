@@ -46,13 +46,6 @@ func (tx *Transaction) AttachHash() {
 	var res bytes.Buffer
 	//initialize an encoder
 	encoder := gob.NewEncoder(&res)
-	//data := bytes.Join([][]byte{Int2ByteArray(tx.blockHeight)}, []byte{})
-	//for _, txInput := range tx.TxIns {
-	//	data = bytes.Join([][]byte{data, txInput.Serialize()}, []byte{})
-	//}
-	//for _, txOutput := range tx.TxOuts {
-	//	data = bytes.Join([][]byte{data, txOutput.Serialize()}, []byte{})
-	//}
 
 	err := encoder.Encode(tx)
 	if err != nil {

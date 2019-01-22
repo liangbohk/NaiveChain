@@ -2,7 +2,6 @@ package core
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/gob"
 	"log"
 	"time"
@@ -25,14 +24,21 @@ type Block struct {
 }
 
 func (block *Block) Transactions2Hash() []byte {
-	var txHashArr [][]byte
+	//var txHashArr [][]byte
+	//
+	//for _, tx := range block.Txs {
+	//	txHashArr = append(txHashArr, tx.TxHash)
+	//}
+	//txsHash := sha256.Sum256(bytes.Join(txHashArr, []byte{}))
+	//
+	//return txsHash[:]
 
+	var data [][]byte
 	for _, tx := range block.Txs {
-		txHashArr = append(txHashArr, tx.TxHash)
+		data = append(data, tx.TxHash)
 	}
-	txsHash := sha256.Sum256(bytes.Join(txHashArr, []byte{}))
-
-	return txsHash[:]
+	merkleTree := NewMerkleTree(data)
+	return merkleTree.RootNode.CheckData
 }
 
 //create new block
