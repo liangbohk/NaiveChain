@@ -3,8 +3,10 @@ package core
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"github.com/boltdb/bolt"
 	"log"
+	"os"
 )
 
 //save all UTXO to database
@@ -159,12 +161,15 @@ func (utxoSet *UTXOSet) FindSpendableUTXOS(from string, amount int64, txs []*Tra
 
 				utxos := DeserializeUTXOS(v)
 				for _, utxo := range utxos.UTXOs {
-					money += utxo.Output.Value
-					txHash := hex.EncodeToString(utxo.TXHash)
-					spendableUTXO[txHash] = append(spendableUTXO[txHash], utxo.Index)
-					if money >= amount {
-						return nil
+					if utxo.Output.UnLockScriptPubkeyWithAddress(from) {
+						money += utxo.Output.Value
+						txHash := hex.EncodeToString(utxo.TXHash)
+						spendableUTXO[txHash] = append(spendableUTXO[txHash], utxo.Index)
+						if money >= amount {
+							return nil
+						}
 					}
+
 				}
 			}
 		}
@@ -172,7 +177,8 @@ func (utxoSet *UTXOSet) FindSpendableUTXOS(from string, amount int64, txs []*Tra
 	})
 
 	if money < amount {
-		log.Panic("no enough balance")
+		fmt.Printf("no enough balance %d, need %d ", money, amount)
+		os.Exit(1)
 	}
 
 	return money, spendableUTXO
@@ -212,20 +218,6 @@ func (utxoSet *UTXOSet) Update() {
 		utxoMap[txHash] = tmpUtxos
 	}
 
-	//err:=utxoSet.Blc.DB.Update(func(tx *bolt.Tx) error {
-	//	table :=tx.Bucket([]byte(utxoTableName))
-	//	if table!=nil {
-	//		//add utxos
-	//		for txHash, utxos := range utxoMap {
-	//			hash, _ := hex.DecodeString(txHash)
-	//			table.Put(hash, utxos.Serialize())
-	//		}
-	//	}else {
-	//		log.Panic("no utxo table")
-	//	}
-	//	return nil
-	//})
-
 	err := utxoSet.Blc.DB.Update(func(tx *bolt.Tx) error {
 		table := tx.Bucket([]byte(utxoTableName))
 		if table != nil {
@@ -233,6 +225,7 @@ func (utxoSet *UTXOSet) Update() {
 			for txHash, utxos := range utxoMap {
 				hash, _ := hex.DecodeString(txHash)
 				table.Put(hash, utxos.Serialize())
+
 			}
 
 			for _, txInput := range txInputs {
@@ -245,9 +238,10 @@ func (utxoSet *UTXOSet) Update() {
 						deleteFlag = true
 					} else {
 						tmpUtxos.UTXOs = append(tmpUtxos.UTXOs, utxo)
+
 					}
 				}
-				if deleteFlag {
+				if deleteFlag == true {
 					table.Delete(txInput.TxHash)
 					table.Put(txInput.TxHash, tmpUtxos.Serialize())
 
@@ -257,8 +251,10 @@ func (utxoSet *UTXOSet) Update() {
 		} else {
 			log.Panic("no utxo table!")
 		}
+
 		return nil
 	})
+
 	if err != nil {
 		log.Panic(err)
 	}

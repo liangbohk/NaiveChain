@@ -61,8 +61,11 @@ func NewSimpleTransaction(blockHeight int64, from string, to string, amount int6
 	wallet := wallets.WalletsMap[from]
 
 	//find usable UTXOs
-	//restValue, dic := utxoSet.Blc.FindSpendableUTXOs(from,amount,txs)
-	restValue, dic := utxoSet.FindSpendableUTXOS(from, amount, txs)
+	restValue, dic := utxoSet.Blc.FindSpendableUTXOs(from, amount, txs)
+	//restValue, dic := utxoSet.FindSpendableUTXOS(from, amount, txs)
+	fmt.Println("-------------------------------")
+	fmt.Println(restValue)
+	fmt.Println(dic)
 
 	//build a tx input array
 	var txIns []*TXInput
@@ -89,6 +92,9 @@ func NewSimpleTransaction(blockHeight int64, from string, to string, amount int6
 
 	tx := &Transaction{blockHeight, []byte{}, txIns, txOuts}
 	tx.AttachHash()
+	fmt.Println(amount)
+	fmt.Println(hex.EncodeToString(tx.TxHash))
+	fmt.Println("-------------------------------")
 
 	//signature
 	utxoSet.Blc.SignTransaction(tx, wallet.PrivateKey, txs)
