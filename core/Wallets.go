@@ -10,32 +10,36 @@ import (
 	"os"
 )
 
-const walletFile = "wallet.dat"
+const walletFile = "wallet_%s.dat"
 
 //define wallets struct and the wallets are unordered
 type Wallets struct {
 	WalletsMap map[string]*Wallet
 }
 
-func NewWallets() (*Wallets, error) {
+func NewWallets(nodeID string) (*Wallets, error) {
+
 	walletsMap := make(map[string]*Wallet)
 	//load wallet data from local file
 	wallets := &Wallets{walletsMap}
-	err := wallets.LoadFromFile()
+	err := wallets.LoadFromFile(nodeID)
 
 	return wallets, err
 }
 
 //create a new wallet for a wallets obj
-func (w *Wallets) CreateNewWallet() {
+func (w *Wallets) CreateNewWallet(nodeID string) {
+
 	wallet := NewWallet()
 	fmt.Println(string(wallet.GetAddress()))
 	w.WalletsMap[string(wallet.GetAddress())] = wallet
-	w.SaveWallets()
+	w.SaveWallets(nodeID)
 }
 
 //save wallet
-func (w *Wallets) SaveWallets() {
+func (w *Wallets) SaveWallets(nodeID string) {
+	walletFile := fmt.Sprintf(walletFile, nodeID)
+
 	var content bytes.Buffer
 	//to serialize some types
 	gob.Register(elliptic.P256())
@@ -53,7 +57,8 @@ func (w *Wallets) SaveWallets() {
 }
 
 //load wallets data from local file
-func (w *Wallets) LoadFromFile() error {
+func (w *Wallets) LoadFromFile(nodeID string) error {
+	walletFile := fmt.Sprintf(walletFile, nodeID)
 	if _, err := os.Stat(walletFile); os.IsNotExist(err) {
 		return err
 	}

@@ -19,9 +19,10 @@ func printUsage() {
 	fmt.Println("\tgetaddresslist -- output all address")
 	fmt.Println("\tcreatewallet -- create a wallet")
 	fmt.Println("\tcreateblockchain -address ADDRESS -- create a blockchain")
-	fmt.Println("\tsend -from FROM -to TO -amount AMOUNT -- send value by transaction")
+	fmt.Println("\tsend -from FROM -to TO -amount AMOUNT -mine -- send value by transaction")
 	fmt.Println("\tgetbalance -address ADDRESS -- get balance of an address")
 	fmt.Println("\tprintchain -- print the block chain")
+	fmt.Println("\tstartnode -mineaddress ADDRESS -- start sever node and specify mining address")
 	fmt.Println("\ttest -- test")
 }
 
@@ -35,21 +36,34 @@ func isValidArg() {
 
 func (cli *CLI) Run() {
 	isValidArg()
+
+	//get NODE_ID
+	nodeID := os.Getenv("NODE_ID")
+	if nodeID == "" {
+		fmt.Println("NODE_ID not set")
+		os.Exit(1)
+	}
+	fmt.Printf("NODE_ID:%s\n", nodeID)
+
 	getAddressListCmd := flag.NewFlagSet("getaddresslist", flag.ExitOnError)
 	createWalletCmd := flag.NewFlagSet("createwallet", flag.ExitOnError)
 	sendBlockCmd := flag.NewFlagSet("send", flag.ExitOnError)
 	printBlockchainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
 	createBlockchainWithGeneisCmd := flag.NewFlagSet("createblockchain", flag.ExitOnError)
 	getBalanceCmd := flag.NewFlagSet("getbalance", flag.ExitOnError)
+	startNodeCmd := flag.NewFlagSet("startnode", flag.ExitOnError)
 	testCmd := flag.NewFlagSet("test", flag.ExitOnError)
 
 	flagSendFrom := sendBlockCmd.String("from", "", "source address")
 	flagSendTo := sendBlockCmd.String("to", "", "dist address")
 	flagSendAmount := sendBlockCmd.String("amount", "", "transfer amount")
+	flagSendMine := sendBlockCmd.Bool("mine", false, "if the transaction(s) are mine now")
 
 	flagCreateBlockchainAddress := createBlockchainWithGeneisCmd.String("address", "", "genesis block address")
 
 	flagGetBalanceWithAddress := getBalanceCmd.String("address", "", "look up the balance of an address")
+
+	flagMineAddress := startNodeCmd.String("mineaddress", "", "coinbase address")
 
 	switch os.Args[1] {
 	case "send":
@@ -77,6 +91,11 @@ func (cli *CLI) Run() {
 		if err != nil {
 			log.Panic(err)
 		}
+	case "startnode":
+		err := startNodeCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
 	case "getaddresslist":
 		err := getAddressListCmd.Parse(os.Args[2:])
 		if err != nil {
@@ -98,7 +117,7 @@ func (cli *CLI) Run() {
 			printUsage()
 			os.Exit(11)
 		}
-		cli.createGenesisBlockChain(*flagCreateBlockchainAddress)
+		cli.createGenesisBlockChain(*flagCreateBlockchainAddress, nodeID)
 
 	}
 
@@ -115,7 +134,7 @@ func (cli *CLI) Run() {
 				os.Exit(1)
 			}
 		}
-		cli.send(from, to, core.Json2Array(*flagSendAmount))
+		cli.send(from, to, core.Json2Array(*flagSendAmount), nodeID, *flagSendMine)
 	}
 
 	if getBalanceCmd.Parsed() {
@@ -123,22 +142,30 @@ func (cli *CLI) Run() {
 			printUsage()
 			os.Exit(1)
 		}
-		cli.getBalance(*flagGetBalanceWithAddress)
+		cli.getBalance(*flagGetBalanceWithAddress, nodeID)
 	}
 
 	if createWalletCmd.Parsed() {
-		cli.createWallet()
+		cli.createWallet(nodeID)
 	}
 	if getAddressListCmd.Parsed() {
-		cli.getAddressList()
+		cli.getAddressList(nodeID)
+	}
+	if startNodeCmd.Parsed() {
+		//if core.IsValidAddress([]byte(*flagMineAddress)) == false {
+		//	fmt.Println("invalid address")
+		//	printUsage()
+		//	os.Exit(11)
+		//}
+		cli.startNode(nodeID, *flagMineAddress)
 	}
 
 	if printBlockchainCmd.Parsed() {
 		//fmt.Println("blockchain info")
-		cli.printChain()
+		cli.printChain(nodeID)
 	}
 
 	if testCmd.Parsed() {
-		cli.TestMethod()
+		cli.TestMethod(nodeID)
 	}
 }

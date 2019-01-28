@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-func test() {
+func test(nodeID string) {
 	//wallet := core.NewWallet()
 	//address := wallet.GetAddress()
 	//
@@ -16,9 +16,9 @@ func test() {
 	//fmt.Printf("%s",hex.EncodeToString(address))
 	//fmt.Println(wallet.IsValidAddress(address))
 
-	wallets, _ := core.NewWallets()
-	wallets.CreateNewWallet()
-	wallets.CreateNewWallet()
+	wallets, _ := core.NewWallets(nodeID)
+	wallets.CreateNewWallet(nodeID)
+	wallets.CreateNewWallet(nodeID)
 	fmt.Println(wallets.WalletsMap)
 }
 

@@ -2,19 +2,23 @@ package cmd
 
 import (
 	"NaiveChain/core"
-	"log"
+	"fmt"
 )
 
 //send transaction
-func (cli *CLI) send(from []string, to []string, amount []string) {
-	if !core.DBExist() {
-		log.Fatal("no blockchain")
-	}
-	blc := core.BlockchainObject()
+func (cli *CLI) send(from []string, to []string, amount []string, nodeID string, mineNow bool) {
+
+	blc := core.BlockchainObject(nodeID)
 	defer blc.DB.Close()
 
-	blc.MineNewBlock(from, to, amount)
+	if mineNow {
+		blc.MineNewBlock(from, to, amount, nodeID)
 
-	utxoSet := &core.UTXOSet{blc}
-	utxoSet.Update()
+		utxoSet := &core.UTXOSet{blc}
+		utxoSet.Update()
+	} else {
+		//send transaction to miner node
+		fmt.Println("not mined now")
+	}
+
 }

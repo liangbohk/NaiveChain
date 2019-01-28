@@ -6,10 +6,10 @@ import (
 )
 
 //look up balance
-func (cli *CLI) getBalance(address string) {
+func (cli *CLI) getBalance(address string, nodeID string) {
 	fmt.Printf("address: %s\n", address)
 
-	blockchain := core.BlockchainObject()
+	blockchain := core.BlockchainObject(nodeID)
 	defer blockchain.DB.Close()
 
 	//get balance from utxo

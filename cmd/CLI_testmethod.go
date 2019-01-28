@@ -4,8 +4,8 @@ import (
 	"NaiveChain/core"
 )
 
-func (cli *CLI) TestMethod() {
-	blc := core.BlockchainObject()
+func (cli *CLI) TestMethod(nodeID string) {
+	blc := core.BlockchainObject(nodeID)
 	defer blc.DB.Close()
 
 	utxoSet := &core.UTXOSet{blc}

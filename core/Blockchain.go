@@ -14,7 +14,7 @@ import (
 )
 
 //database name
-const dbName = "naivechain.db"
+const dbName = "naivechain_%s.db"
 const tableName = "blocks"
 
 //blockchain structure
@@ -26,7 +26,7 @@ type Blockchain struct {
 }
 
 //check if the db exist
-func DBExist() bool {
+func DBExist(dbName string) bool {
 	if _, err := os.Stat(dbName); os.IsNotExist(err) {
 		return false
 	}
@@ -34,9 +34,12 @@ func DBExist() bool {
 }
 
 //generate a blockchain with a genesis block
-func CreateBlockchainWithAGenesisBlock(address string) *Blockchain {
+func CreateBlockchainWithAGenesisBlock(address string, nodeID string) *Blockchain {
+	//specify db file name
+	dbName := fmt.Sprintf(dbName, nodeID)
+
 	//check if the db exist
-	if DBExist() {
+	if DBExist(dbName) {
 		fmt.Println("genesis block already exists!")
 		os.Exit(1)
 	}
@@ -165,10 +168,13 @@ func (blc *Blockchain) PrintChain() {
 }
 
 //get a blockchain object
-func BlockchainObject() *Blockchain {
+func BlockchainObject(nodeID string) *Blockchain {
+	//specify the db file name
+	dbName := fmt.Sprintf(dbName, nodeID)
+
 	//check if the database file exist
 
-	if !DBExist() {
+	if !DBExist(dbName) {
 		log.Fatal("no blockchain")
 	}
 
@@ -421,7 +427,7 @@ func (blc *Blockchain) FindSpendableUTXOs(from string, amount int64, txs []*Tran
 	return value, selectedUTXOs
 }
 
-func (blc *Blockchain) MineNewBlock(from []string, to []string, amount []string) *Blockchain {
+func (blc *Blockchain) MineNewBlock(from []string, to []string, amount []string, nodeID string) *Blockchain {
 
 	//build new transactions
 	//set up the transactions.Note: the tx order in txs is specially setup
@@ -440,7 +446,7 @@ func (blc *Blockchain) MineNewBlock(from []string, to []string, amount []string)
 		if err != nil {
 			log.Panic(err)
 		}
-		tx := NewSimpleTransaction(blockHeight+1, from[index], to[index], int64(value), utxoSet, txs)
+		tx := NewSimpleTransaction(blockHeight+1, from[index], to[index], int64(value), utxoSet, txs, nodeID)
 		txs = append(txs, tx)
 	}
 

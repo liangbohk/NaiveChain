@@ -55,9 +55,9 @@ func (tx *Transaction) AttachHash() {
 	tx.TxHash = hash[:]
 }
 
-func NewSimpleTransaction(blockHeight int64, from string, to string, amount int64, utxoSet *UTXOSet, txs []*Transaction) *Transaction {
+func NewSimpleTransaction(blockHeight int64, from string, to string, amount int64, utxoSet *UTXOSet, txs []*Transaction, nodeID string) *Transaction {
 
-	wallets, _ := NewWallets()
+	wallets, _ := NewWallets(nodeID)
 	wallet := wallets.WalletsMap[from]
 
 	//find usable UTXOs
