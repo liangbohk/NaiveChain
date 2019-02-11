@@ -8,16 +8,16 @@ import (
 
 type Version struct {
 	Version     int
-	BaseHeight  int
+	BaseHeight  int64
 	AddressFrom string
 }
 
 //serialize version structure
-func (v *Version) Serialize() []byte {
+func (gbs *Version) Serialize() []byte {
 	var res bytes.Buffer
 	//initialize an encoder
 	encoder := gob.NewEncoder(&res)
-	err := encoder.Encode(v)
+	err := encoder.Encode(gbs)
 	if err != nil {
 		log.Panic(err)
 	}

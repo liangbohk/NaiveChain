@@ -1,9 +1,7 @@
 package core
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -13,12 +11,24 @@ const PROTOCOL = "tcp"
 const COMMANDLENGTH = 12
 const NODE_VERSION = 1
 
+const VERSION_COMMAND = "version"
+const ADDR_COMMAND = "addr"
+const BLOCK_COMMAND = "block"
+const INV_COMMAND = "inv"
+const GETBLOCKS_COMMAND = "getblocks"
+const GETDATA_COMMAND = "getdata"
+const TX_COMMAND = "tx"
+
+const BLOCK_TYPE = "block"
+const TX_TYPE = "tx"
+
 var knowNodes = []string{"localhost:3000"}
+var nodeAddress = knowNodes[0]
 
 func StartServer(nodeID string, mineAddress string) {
 
 	//ip address
-	nodeAddress := fmt.Sprintf("localhost:%s", nodeID)
+	nodeAddress = fmt.Sprintf("localhost:%s", nodeID)
 
 	ln, err := net.Listen(PROTOCOL, nodeAddress)
 
@@ -35,7 +45,7 @@ func StartServer(nodeID string, mineAddress string) {
 	//miner node 3002
 	if nodeAddress != knowNodes[0] {
 		//send to master node to request data
-		sendVersion(nodeAddress, knowNodes[0], blc)
+		sendVersion(knowNodes[0], blc)
 	}
 
 	//go func(){
@@ -50,37 +60,8 @@ func StartServer(nodeID string, mineAddress string) {
 		if err != nil {
 			log.Panic(err)
 		}
-		//read data from client
-		request, err := ioutil.ReadAll(conn)
-		if err != nil {
-			log.Panic(err)
-		}
-		fmt.Printf("msg received: %s\n", request)
+		go handleConnection(conn, blc)
 	}
-}
-
-func sendData(to string, from string, data []byte) {
-	conn, err := net.Dial("tcp", to)
-	if err != nil {
-		log.Panic(err)
-	}
-	defer conn.Close()
-
-	//send data
-	_, err = io.Copy(conn, bytes.NewBuffer(data))
-	if err != nil {
-		log.Panic(err)
-	}
-}
-
-func sendVersion(from string, to string, blc *Blockchain) {
-	//baseHeight := blc.getBaseHeight()
-	baseHeight := 1
-	version := &Version{NODE_VERSION, baseHeight, from}
-	bytes := version.Serialize()
-	data := append(command2Bytes("version"), bytes...)
-	sendData(from, to, data)
-
 }
 
 //convert command to bytes
@@ -101,4 +82,33 @@ func bytes2Command(bytes []byte) string {
 		}
 	}
 	return string(command)
+}
+
+func handleConnection(conn net.Conn, blc *Blockchain) {
+	//read data from client
+	request, err := ioutil.ReadAll(conn)
+	if err != nil {
+		log.Panic(err)
+	}
+	fmt.Printf("msg received: %s\n", string(request))
+
+	command := bytes2Command(request[:COMMANDLENGTH])
+	switch command {
+	case VERSION_COMMAND:
+		handleVersion(request, blc)
+	case ADDR_COMMAND:
+		handleAddr(request, blc)
+	case BLOCK_COMMAND:
+		handleBlock(request, blc)
+	case INV_COMMAND:
+		handleInv(request, blc)
+	case TX_COMMAND:
+		handleTx(request, blc)
+	case GETBLOCKS_COMMAND:
+		handleGetBlocks(request, blc)
+	case GETDATA_COMMAND:
+		handleGetData(request, blc)
+	default:
+		fmt.Println("Unknown command!")
+	}
 }

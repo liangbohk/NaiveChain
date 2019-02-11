@@ -205,7 +205,7 @@ func BlockchainObject(nodeID string) *Blockchain {
 	return &Blockchain{tailHash, db}
 }
 
-func (blc *Blockchain) getBlockchainHeight() (int64, error) {
+func (blc *Blockchain) GetBlockchainHeight() (int64, error) {
 	var height int64 = 0
 	err := blc.DB.View(func(tx *bolt.Tx) error {
 		//get the table from the database
@@ -431,7 +431,7 @@ func (blc *Blockchain) MineNewBlock(from []string, to []string, amount []string,
 
 	//build new transactions
 	//set up the transactions.Note: the tx order in txs is specially setup
-	blockHeight, err := blc.getBlockchainHeight()
+	blockHeight, err := blc.GetBlockchainHeight()
 	if err != nil {
 		log.Panic(err)
 	}
@@ -523,4 +523,23 @@ func (blc *Blockchain) FindUTXOMap() map[string]UTXOS {
 		}
 	}
 	return utxoMap
+}
+
+func (blc *Blockchain) GetBlockHashes() [][]byte {
+
+	iter := blc.Iterator()
+	var hashes [][]byte
+
+	for {
+		block := iter.Next()
+		hashes = append(hashes, block.Hash)
+
+		var hashInt big.Int
+		hashInt.SetBytes(block.PrevHash)
+		if hashInt.Cmp(big.NewInt(0)) == 0 {
+			break
+		}
+	}
+
+	return hashes
 }
