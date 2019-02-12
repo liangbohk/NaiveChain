@@ -29,13 +29,20 @@ func handleAddr(request []byte, blc *Blockchain) {
 }
 
 func handleBlock(request []byte, blc *Blockchain) {
-	gbs := DeserializeGetBlocks(request[COMMANDLENGTH:])
-	blcHashes := blc.GetBlockHashes()
-	sendInv(gbs.AddrFrom, "block", BLOCK_COMMAND, blcHashes)
+
 }
 
 func handleInv(request []byte, blc *Blockchain) {
+	inv := DeserializeInv(request[COMMANDLENGTH:])
 
+	if inv.Type == BLOCK_TYPE {
+		hash := inv.Items[0]
+		sendGetData(inv.AddrFrom, BLOCK_TYPE, hash)
+	}
+
+	if inv.Type == TX_TYPE {
+
+	}
 }
 
 func handleTx(request []byte, blc *Blockchain) {
@@ -43,9 +50,19 @@ func handleTx(request []byte, blc *Blockchain) {
 }
 
 func handleGetBlocks(request []byte, blc *Blockchain) {
-
+	gbs := DeserializeGetBlocks(request[COMMANDLENGTH:])
+	blcHashes := blc.GetBlockHashes()
+	sendInv(gbs.AddrFrom, BLOCK_TYPE, blcHashes)
 }
 
 func handleGetData(request []byte, blc *Blockchain) {
+	getData := DeserializeGetData(request)
+	if getData.Type == BLOCK_TYPE {
+		block, err := blc.GetBlock([]byte(getData.Hash))
+		if err != nil {
+			return
+		}
+		sendBlock(getData.AddrFrom, &block)
+	}
 
 }

@@ -23,6 +23,7 @@ func sendData(to string, data []byte) {
 	}
 }
 
+//send node version
 func sendVersion(to string, blc *Blockchain) {
 	baseHeight, _ := blc.GetBlockchainHeight()
 	//baseHeight := 1
@@ -33,6 +34,7 @@ func sendVersion(to string, blc *Blockchain) {
 
 }
 
+//request blocks
 func sendGetBlocks(to string) {
 	getBlocks := &GetBlocks{nodeAddress}
 	thisBytes := getBlocks.Serialize()
@@ -40,9 +42,18 @@ func sendGetBlocks(to string) {
 	sendData(to, data)
 }
 
-func sendInv(to string, command string, hashes [][]byte) {
-	inv := &Inv{nodeAddress, BLOCK_TYPE, hashes}
+//send all block hash
+func sendInv(to string, thisType string, hashes [][]byte) {
+	inv := &Inv{nodeAddress, thisType, hashes}
 	thisBytes := inv.Serialize()
-	data := append(command2Bytes(command), thisBytes...)
+	data := append(command2Bytes(INV_COMMAND), thisBytes...)
+	sendData(to, data)
+}
+
+//request data
+func sendGetData(to string, thisType string, blockHash []byte) {
+	getData := &GetData{nodeAddress, thisType, blockHash}
+	thisBytes := getData.Serialize()
+	data := append(command2Bytes(GETDATA_COMMAND), thisBytes...)
 	sendData(to, data)
 }

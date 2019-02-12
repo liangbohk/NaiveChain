@@ -11,11 +11,11 @@ type GetBlocks struct {
 }
 
 //serialize getblocks structure
-func (gbs *GetBlocks) Serialize() []byte {
+func (gd *GetBlocks) Serialize() []byte {
 	var res bytes.Buffer
 	//initialize an encoder
 	encoder := gob.NewEncoder(&res)
-	err := encoder.Encode(gbs)
+	err := encoder.Encode(gd)
 	if err != nil {
 		log.Panic(err)
 	}
